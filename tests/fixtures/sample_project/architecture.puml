@@ -1,0 +1,8 @@
+@startuml
+  component [controllers]
+  component [services]
+  component [models]
+  component [utils]
+  [controllers] --> [services]
+  [services] --> [models]
+@enduml
