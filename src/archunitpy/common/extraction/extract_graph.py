@@ -294,25 +294,33 @@ def _resolve_absolute_import(
     """Resolve an absolute import within the project."""
     parts = import_name.split(".")
 
-    # Try progressively longer paths within the project
-    # e.g., for 'foo.bar.baz', try:
-    #   foo/bar/baz.py, foo/bar/baz/__init__.py
-    #   foo/bar.py (baz might be an attribute)
-    #   foo/__init__.py (bar.baz might be attributes)
+    # Try resolving from the project root and also from parent directory
+    # (the parent handles the case where project_root is itself a package
+    # and imports use the package name as prefix)
+    search_roots = [project_root]
+    parent = os.path.dirname(project_root)
+    if parent and parent != project_root:
+        search_roots.append(parent)
 
-    for i in range(len(parts), 0, -1):
-        path_parts = parts[:i]
-        candidate_base = os.path.join(project_root, *path_parts)
+    for root in search_roots:
+        for i in range(len(parts), 0, -1):
+            path_parts = parts[:i]
+            candidate_base = os.path.join(root, *path_parts)
 
-        # Try as a module file
-        candidate_file = candidate_base + ".py"
-        if os.path.isfile(candidate_file):
-            return _normalize(os.path.abspath(candidate_file)), False
+            # Try as a module file
+            candidate_file = candidate_base + ".py"
+            if os.path.isfile(candidate_file):
+                resolved = _normalize(os.path.abspath(candidate_file))
+                # Only count as internal if it's inside the project root
+                is_internal = resolved.startswith(_normalize(os.path.abspath(project_root)))
+                return resolved, not is_internal
 
-        # Try as a package
-        candidate_init = os.path.join(candidate_base, "__init__.py")
-        if os.path.isfile(candidate_init):
-            return _normalize(os.path.abspath(candidate_init)), False
+            # Try as a package
+            candidate_init = os.path.join(candidate_base, "__init__.py")
+            if os.path.isfile(candidate_init):
+                resolved = _normalize(os.path.abspath(candidate_init))
+                is_internal = resolved.startswith(_normalize(os.path.abspath(project_root)))
+                return resolved, not is_internal
 
     # Not found in project → external
     return import_name, True
