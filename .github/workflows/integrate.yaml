@@ -46,7 +46,7 @@ jobs:
             - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
-                  persist-credentials: false
+                  token: ${{ secrets.GITHUB_TOKEN }}
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
@@ -55,18 +55,23 @@ jobs:
               uses: actions/setup-python@v5
               with:
                   python-version: "3.12"
-            - name: Install build tools
-              run: pip install build twine
-            - name: Install semantic-release
+            - name: Install semantic-release plugins
               run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/exec @semantic-release/github
-            - name: Release
+            - name: Semantic Release
+              id: release
               run: npx semantic-release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            - name: Build
+            # After semantic-release: re-read the (potentially bumped) pyproject.toml,
+            # build, and publish to PyPI
+            - name: Pull latest (version-bumped) commit
+              run: git pull --ff-only origin main || true
+            - name: Install build tools
+              run: pip install build twine
+            - name: Build package
               run: python -m build
             - name: Publish to PyPI
               env:
                   TWINE_USERNAME: __token__
                   TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-              run: twine upload dist/* || true
+              run: twine upload dist/* --skip-existing
