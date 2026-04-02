@@ -1,0 +1,59 @@
+name: Integrate
+on:
+    - push
+    - pull_request
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+jobs:
+    integrate:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version: ["3.10", "3.11", "3.12", "3.13"]
+        steps:
+            - uses: actions/checkout@v4
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Cache pip
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: pip-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+                  restore-keys: |
+                      pip-${{ runner.os }}-${{ matrix.python-version }}-
+            - name: Install dependencies
+              run: pip install -e ".[dev]"
+            - name: Lint
+              run: ruff check src/
+            - name: Type check
+              run: mypy src/archunitpy/ --ignore-missing-imports
+            - name: Test
+              run: pytest --tb=short -q
+
+    publish:
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        needs: integrate
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            id-token: write
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.12"
+            - name: Install build tools
+              run: pip install build twine
+            - name: Build
+              run: python -m build
+            - name: Publish to PyPI
+              env:
+                  TWINE_USERNAME: __token__
+                  TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+              run: twine upload dist/*
