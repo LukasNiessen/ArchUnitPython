@@ -37,7 +37,7 @@ class ViolationFactory:
 
         if isinstance(violation, ViolatingNode):
             return TestViolation(
-                message=f"File pattern violation",
+                message="File pattern violation",
                 details=f"File '{violation.projected_node.label}' "
                 f"{'matches' if violation.is_negated else 'does not match'} "
                 f"pattern '{violation.check_pattern.regexp.pattern}'",
@@ -46,7 +46,7 @@ class ViolationFactory:
         if isinstance(violation, ViolatingFileDependency):
             edge = violation.dependency
             return TestViolation(
-                message=f"File dependency violation",
+                message="File dependency violation",
                 details=f"'{edge.source_label}' "
                 f"{'depends on' if violation.is_negated else 'does not depend on'} "
                 f"'{edge.target_label}'",

@@ -30,7 +30,6 @@ from archunitpython.metrics.calculation.count import (
     StatementCountMetric,
 )
 from archunitpython.metrics.calculation.distance import (
-    calculate_distance_metrics_for_project,
     calculate_file_distance_metrics,
 )
 from archunitpython.metrics.calculation.lcom import (
@@ -251,11 +250,12 @@ class FileMetricCondition:
         self._comparison: MetricComparison = comparison
 
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
+        import os
+
         from archunitpython.common.extraction.extract_graph import (
             _DEFAULT_EXCLUDE,
             _find_python_files,
         )
-        import os
 
         project = self._project_path or os.getcwd()
         project = os.path.abspath(project)

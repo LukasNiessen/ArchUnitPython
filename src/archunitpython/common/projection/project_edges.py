@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 from archunitpython.common.extraction.graph import Edge
-from archunitpython.common.projection.types import MapFunction, MappedEdge, ProjectedEdge
+from archunitpython.common.projection.types import MapFunction, ProjectedEdge
 
 
 def project_edges(

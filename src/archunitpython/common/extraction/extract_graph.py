@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import ast
 import os
-import sys
-from pathlib import Path
 
 from archunitpython.common.extraction.graph import Edge, Graph, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions

@@ -3,9 +3,9 @@ from archunitpython.metrics.common.types import (
     EnhancedClassInfo,
     FieldInfo,
     FileAnalysisResult,
+    MethodInfo,
     Metric,
     MetricComparison,
-    MethodInfo,
 )
 
 __all__ = [

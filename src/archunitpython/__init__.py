@@ -3,26 +3,25 @@
 __version__ = "0.1.0"
 
 # Files API
-from archunitpython.files import project_files, files
-
-# Slices API
-from archunitpython.slices import project_slices
+# Common
+from archunitpython.common import (
+    CheckOptions,
+    EmptyTestViolation,
+    TechnicalError,
+    UserError,
+    Violation,
+)
+from archunitpython.common.extraction import clear_graph_cache, extract_graph
+from archunitpython.files import files, project_files
 
 # Metrics API
 from archunitpython.metrics import metrics
 
+# Slices API
+from archunitpython.slices import project_slices
+
 # Testing
 from archunitpython.testing import assert_passes, format_violations
-
-# Common
-from archunitpython.common import (
-    Violation,
-    EmptyTestViolation,
-    CheckOptions,
-    TechnicalError,
-    UserError,
-)
-from archunitpython.common.extraction import extract_graph, clear_graph_cache
 
 __all__ = [
     # Files

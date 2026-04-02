@@ -19,7 +19,6 @@ from archunitpython.common.projection.project_edges import project_edges
 from archunitpython.slices.assertion.admissible_edges import (
     CoherenceOptions,
     Rule,
-    ViolatingEdge,
     gather_positive_violations,
     gather_violations,
 )

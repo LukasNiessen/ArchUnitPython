@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import os
 
-from archunitpython.common.extraction.extract_graph import _find_python_files, _DEFAULT_EXCLUDE
+from archunitpython.common.extraction.extract_graph import _DEFAULT_EXCLUDE, _find_python_files
 from archunitpython.metrics.common.types import (
     ClassInfo,
     EnhancedClassInfo,
