@@ -1,6 +1,7 @@
 # ArchUnitPython - Architecture Testing
 
 <div align="center" name="top">
+  <img align="center" src="assets/logo-rounded.png" width="150" height="150" alt="ArchUnitPython Logo">
 
 <!-- spacer -->
 <p></p>
@@ -604,6 +605,12 @@ ArchUnitPython started as the Python port of [ArchUnitTS](https://github.com/Luk
 
 - **[LukasNiessen](https://github.com/LukasNiessen)** - Creator and main maintainer
 
+### Contributors
+
+<a href="https://github.com/LukasNiessen/ArchUnitPython/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=LukasNiessen/ArchUnitPython&max=1000&contributors=10" />
+</a>
+
 ### Questions
 
 Found a bug? Want to discuss features?
@@ -613,9 +620,13 @@ Found a bug? Want to discuss features?
 
 If ArchUnitPython helps your project, please consider:
 
-- Starring the repository
-- Suggesting new features
-- Contributing code or documentation
+- Starring the repository 💚
+- Suggesting new features 💭
+- Contributing code or documentation ⌨️
+
+### Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=LukasNiessen/ArchUnitPython&type=Date)](https://www.star-history.com/#LukasNiessen/ArchUnitPython&Date)
 
 ## 📄 License
 
