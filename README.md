@@ -15,7 +15,7 @@
 
 Enforce architecture rules in Python projects. Check for dependency directions, detect circular dependencies, enforce coding standards and much more. Integrates with pytest and any other testing framework. Very simple setup and pipeline integration. Zero runtime dependencies.
 
-_The Python port of [ArchUnitTS](https://github.com/LukasNiessen/ArchUnitTS). Inspired by the amazing ArchUnit library but we are not affiliated with ArchUnit._
+_Inspired by the amazing ArchUnit library but we are not affiliated with ArchUnit._
 
 [Setup](#-setup) • [Use Cases](#-use-cases) • [Features](#-features) • [Contributing](CONTRIBUTING.md)
 
