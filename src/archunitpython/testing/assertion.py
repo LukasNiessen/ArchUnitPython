@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from archunitpython.common.assertion.violation import Violation
-from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.fluentapi.checkable import Checkable, CheckOptions
 from archunitpython.testing.common.violation_factory import ViolationFactory
 
 
@@ -30,7 +30,7 @@ def format_violations(violations: list[Violation]) -> str:
 
 
 def assert_passes(
-    checkable: object,
+    checkable: Checkable,
     options: CheckOptions | None = None,
 ) -> None:
     """Assert that an architecture rule passes (no violations).
@@ -42,6 +42,6 @@ def assert_passes(
     Raises:
         AssertionError: If the rule has violations.
     """
-    violations = checkable.check(options)  # type: ignore[union-attr]
+    violations = checkable.check(options)
     if violations:
         raise AssertionError(format_violations(violations))

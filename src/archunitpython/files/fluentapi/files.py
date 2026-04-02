@@ -10,6 +10,8 @@ Usage:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from archunitpython.common.assertion.violation import EmptyTestViolation, Violation
 from archunitpython.common.extraction.extract_graph import extract_graph
 from archunitpython.common.fluentapi.checkable import CheckOptions
@@ -18,6 +20,7 @@ from archunitpython.common.projection.edge_projections import per_internal_edge
 from archunitpython.common.projection.project_cycles import project_cycles
 from archunitpython.common.projection.project_edges import project_edges
 from archunitpython.common.projection.project_nodes import project_to_nodes
+from archunitpython.common.projection.types import ProjectedNode
 from archunitpython.common.regex_factory import RegexFactory
 from archunitpython.common.types import Filter, Pattern
 from archunitpython.files.assertion.custom_file_logic import (
@@ -257,7 +260,11 @@ class DependOnFileConditionBuilder:
         )
 
 
-def _get_filtered_nodes(project_path, filters, options):
+def _get_filtered_nodes(
+    project_path: str | None,
+    filters: list[Filter],
+    options: CheckOptions | None,
+) -> list[ProjectedNode]:
     """Extract graph and get nodes matching filters."""
     graph = extract_graph(project_path, options=options)
     nodes = project_to_nodes(graph)
@@ -266,7 +273,12 @@ def _get_filtered_nodes(project_path, filters, options):
     return [n for n in nodes if matches_all_patterns(n.label, filters)]
 
 
-def _check_empty_test(filtered_items, filters, is_negated, options):
+def _check_empty_test(
+    filtered_items: Sequence[object],
+    filters: list[Filter],
+    is_negated: bool,
+    options: CheckOptions | None,
+) -> list[Violation] | None:
     """Check for empty test condition."""
     if not filtered_items and not (options and options.allow_empty_tests):
         return [

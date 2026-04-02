@@ -8,7 +8,7 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Any, Callable
 
 from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.fluentapi.checkable import CheckOptions
@@ -155,7 +155,7 @@ class CountMetricsBuilder:
 
 
 class ClassMetricThresholdBuilder:
-    def __init__(self, project_path, filters, metric) -> None:
+    def __init__(self, project_path: str | None, filters: list[Filter], metric: Any) -> None:
         self._project_path = project_path
         self._filters = filters
         self._metric = metric
@@ -189,12 +189,19 @@ class ClassMetricThresholdBuilder:
 class ClassMetricCondition:
     """Checkable that verifies a class-level metric threshold."""
 
-    def __init__(self, project_path, filters, metric, threshold, comparison) -> None:
+    def __init__(
+        self,
+        project_path: str | None,
+        filters: list[Filter],
+        metric: Any,
+        threshold: float,
+        comparison: MetricComparison,
+    ) -> None:
         self._project_path = project_path
         self._filters = filters
         self._metric = metric
         self._threshold = threshold
-        self._comparison: MetricComparison = comparison
+        self._comparison = comparison
 
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         classes = _get_filtered_classes(self._project_path, self._filters)
@@ -218,7 +225,7 @@ class ClassMetricCondition:
 
 
 class FileMetricThresholdBuilder:
-    def __init__(self, project_path, filters, metric) -> None:
+    def __init__(self, project_path: str | None, filters: list[Filter], metric: Any) -> None:
         self._project_path = project_path
         self._filters = filters
         self._metric = metric
@@ -242,7 +249,14 @@ class FileMetricThresholdBuilder:
 class FileMetricCondition:
     """Checkable that verifies a file-level metric threshold."""
 
-    def __init__(self, project_path, filters, metric, threshold, comparison) -> None:
+    def __init__(
+        self,
+        project_path: str | None,
+        filters: list[Filter],
+        metric: Any,
+        threshold: float,
+        comparison: MetricComparison,
+    ) -> None:
         self._project_path = project_path
         self._filters = filters
         self._metric = metric
@@ -288,7 +302,7 @@ class FileMetricCondition:
 
 
 class LCOMMetricsBuilder:
-    def __init__(self, project_path, filters) -> None:
+    def __init__(self, project_path: str | None, filters: list[Filter]) -> None:
         self._project_path = project_path
         self._filters = filters
 
@@ -321,7 +335,7 @@ class LCOMMetricsBuilder:
 
 
 class DistanceMetricsBuilder:
-    def __init__(self, project_path, filters) -> None:
+    def __init__(self, project_path: str | None, filters: list[Filter]) -> None:
         self._project_path = project_path
         self._filters = filters
 
@@ -348,7 +362,7 @@ class DistanceMetricsBuilder:
 
 
 class DistanceThresholdBuilder:
-    def __init__(self, project_path, filters, metric_attr) -> None:
+    def __init__(self, project_path: str | None, filters: list[Filter], metric_attr: str) -> None:
         self._project_path = project_path
         self._filters = filters
         self._metric_attr = metric_attr
@@ -375,7 +389,14 @@ class DistanceThresholdBuilder:
 class DistanceCondition:
     """Checkable for distance metric thresholds."""
 
-    def __init__(self, project_path, filters, metric_attr, threshold, comparison) -> None:
+    def __init__(
+        self,
+        project_path: str | None,
+        filters: list[Filter],
+        metric_attr: str,
+        threshold: float,
+        comparison: MetricComparison,
+    ) -> None:
         self._project_path = project_path
         self._filters = filters
         self._metric_attr = metric_attr
@@ -408,7 +429,7 @@ class DistanceCondition:
 class ZoneCondition:
     """Checkable for zone detection (pain/uselessness)."""
 
-    def __init__(self, project_path, filters, zone_type) -> None:
+    def __init__(self, project_path: str | None, filters: list[Filter], zone_type: str) -> None:
         self._project_path = project_path
         self._filters = filters
         self._zone_type = zone_type
@@ -444,7 +465,14 @@ class ZoneCondition:
 
 
 class CustomMetricsBuilder:
-    def __init__(self, project_path, filters, name, description, calculation) -> None:
+    def __init__(
+        self,
+        project_path: str | None,
+        filters: list[Filter],
+        name: str,
+        description: str,
+        calculation: Callable[[ClassInfo], float],
+    ) -> None:
         self._project_path = project_path
         self._filters = filters
         self._name = name
@@ -486,13 +514,21 @@ class CustomMetricsBuilder:
 class CustomMetricCondition:
     """Checkable for custom metric thresholds."""
 
-    def __init__(self, project_path, filters, name, calculation, threshold, comparison) -> None:
+    def __init__(
+        self,
+        project_path: str | None,
+        filters: list[Filter],
+        name: str,
+        calculation: Callable[[ClassInfo], float],
+        threshold: float,
+        comparison: MetricComparison,
+    ) -> None:
         self._project_path = project_path
         self._filters = filters
         self._name = name
         self._calculation = calculation
         self._threshold = threshold
-        self._comparison: MetricComparison = comparison
+        self._comparison = comparison
 
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         classes = _get_filtered_classes(self._project_path, self._filters)
@@ -518,7 +554,14 @@ class CustomMetricCondition:
 class CustomAssertionCondition:
     """Checkable for custom metric assertions."""
 
-    def __init__(self, project_path, filters, name, calculation, assertion) -> None:
+    def __init__(
+        self,
+        project_path: str | None,
+        filters: list[Filter],
+        name: str,
+        calculation: Callable[[ClassInfo], float],
+        assertion: Callable[[float, ClassInfo], bool],
+    ) -> None:
         self._project_path = project_path
         self._filters = filters
         self._name = name

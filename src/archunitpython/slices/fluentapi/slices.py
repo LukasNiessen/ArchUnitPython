@@ -16,9 +16,9 @@ from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.extraction.extract_graph import extract_graph
 from archunitpython.common.fluentapi.checkable import CheckOptions
 from archunitpython.common.projection.project_edges import project_edges
+from archunitpython.common.projection.types import MapFunction
 from archunitpython.slices.assertion.admissible_edges import (
     CoherenceOptions,
-    Rule,
     gather_positive_violations,
     gather_violations,
 )
@@ -26,7 +26,7 @@ from archunitpython.slices.projection.slicing_projections import (
     slice_by_pattern,
     slice_by_regex,
 )
-from archunitpython.slices.uml.generate_rules import generate_rule
+from archunitpython.slices.uml.generate_rules import Rule, generate_rule
 
 
 def project_slices(project_path: str | None = None) -> "SliceConditionBuilder":
@@ -174,7 +174,7 @@ class PositiveSliceCondition:
             edges, rules, contained_nodes, self._coherence_options
         )
 
-    def _get_mapper(self):
+    def _get_mapper(self) -> MapFunction:
         if self._pattern:
             return slice_by_pattern(self._pattern)
         elif self._regex:
@@ -210,7 +210,7 @@ class NegativeSliceCondition:
         forbidden_rule = Rule(source=self._source, target=self._target)
         return gather_violations(edges, [forbidden_rule])
 
-    def _get_mapper(self):
+    def _get_mapper(self) -> MapFunction:
         if self._pattern:
             return slice_by_pattern(self._pattern)
         elif self._regex:

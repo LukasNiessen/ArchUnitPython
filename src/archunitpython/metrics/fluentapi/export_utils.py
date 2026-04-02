@@ -22,7 +22,7 @@ class MetricsExporter:
 
     @staticmethod
     def export_as_html(
-        data: dict,
+        data: dict[str, object],
         options: ExportOptions | None = None,
     ) -> str:
         """Export metric data as an HTML report.
