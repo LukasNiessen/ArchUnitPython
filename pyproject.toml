@@ -5,12 +5,31 @@ build-backend = "hatchling.build"
 [project]
 name = "archunitpython"
 version = "0.1.0"
-description = "Architecture testing library for Python projects"
+description = "Architecture testing library for Python projects. Enforce dependency rules, detect cycles, validate metrics."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { name = "ArchUnitPython Contributors" },
+    { name = "Lukas Niessen", email = "lks.niessen@gmail.com" },
+]
+keywords = [
+    "architecture",
+    "testing",
+    "python",
+    "code-quality",
+    "dependency-analysis",
+    "circular-dependencies",
+    "clean-code",
+    "architectural-testing",
+    "static-analysis",
+    "code-standards",
+    "pytest",
+    "software-architecture",
+    "technical-debt",
+    "code-metrics",
+    "linting",
+    "developer-tools",
+    "archunit",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -25,6 +44,13 @@ classifiers = [
     "Topic :: Software Development :: Quality Assurance",
     "Typing :: Typed",
 ]
+
+[project.urls]
+Homepage = "https://github.com/LukasNiessen/ArchUnitPython"
+Repository = "https://github.com/LukasNiessen/ArchUnitPython.git"
+Documentation = "https://lukasniessen.github.io/ArchUnitPython/"
+Issues = "https://github.com/LukasNiessen/ArchUnitPython/issues"
+Changelog = "https://github.com/LukasNiessen/ArchUnitPython/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
