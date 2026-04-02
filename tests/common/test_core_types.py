@@ -2,11 +2,11 @@
 
 import re
 
-from archunitpy.common.assertion.violation import EmptyTestViolation, Violation
-from archunitpy.common.error.errors import TechnicalError, UserError
-from archunitpy.common.fluentapi.checkable import CheckOptions
-from archunitpy.common.logging.types import LoggingOptions
-from archunitpy.common.types import Filter, PatternMatchingOptions
+from archunitpython.common.assertion.violation import EmptyTestViolation, Violation
+from archunitpython.common.error.errors import TechnicalError, UserError
+from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.logging.types import LoggingOptions
+from archunitpython.common.types import Filter, PatternMatchingOptions
 
 
 class TestViolation:

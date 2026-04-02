@@ -2,24 +2,24 @@
 
 import os
 
-from archunitpy.common.extraction.graph import Edge
-from archunitpy.common.projection.types import ProjectedEdge, ProjectedNode
-from archunitpy.common.regex_factory import RegexFactory
-from archunitpy.files.assertion.custom_file_logic import (
+from archunitpython.common.extraction.graph import Edge
+from archunitpython.common.projection.types import ProjectedEdge, ProjectedNode
+from archunitpython.common.regex_factory import RegexFactory
+from archunitpython.files.assertion.custom_file_logic import (
     CustomFileViolation,
     FileInfo,
     _build_file_info,
     gather_custom_file_violations,
 )
-from archunitpy.files.assertion.cycle_free import (
+from archunitpython.files.assertion.cycle_free import (
     ViolatingCycle,
     gather_cycle_violations,
 )
-from archunitpy.files.assertion.depend_on_files import (
+from archunitpython.files.assertion.depend_on_files import (
     ViolatingFileDependency,
     gather_depend_on_file_violations,
 )
-from archunitpy.files.assertion.matching_files import (
+from archunitpython.files.assertion.matching_files import (
     ViolatingNode,
     gather_regex_matching_violations,
 )

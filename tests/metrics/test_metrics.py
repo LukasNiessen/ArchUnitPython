@@ -2,12 +2,12 @@
 
 import os
 
-from archunitpy.metrics.common.types import ClassInfo, FieldInfo, MethodInfo
-from archunitpy.metrics.extraction.extract_class_info import (
+from archunitpython.metrics.common.types import ClassInfo, FieldInfo, MethodInfo
+from archunitpython.metrics.extraction.extract_class_info import (
     extract_class_info,
     extract_enhanced_class_info,
 )
-from archunitpy.metrics.calculation.count import (
+from archunitpython.metrics.calculation.count import (
     ClassCountMetric,
     FieldCountMetric,
     FunctionCountMetric,
@@ -16,7 +16,7 @@ from archunitpy.metrics.calculation.count import (
     MethodCountMetric,
     StatementCountMetric,
 )
-from archunitpy.metrics.calculation.lcom import (
+from archunitpython.metrics.calculation.lcom import (
     LCOM1,
     LCOM2,
     LCOM3,
@@ -26,11 +26,11 @@ from archunitpy.metrics.calculation.lcom import (
     LCOM96b,
     LCOMStar,
 )
-from archunitpy.metrics.calculation.distance import (
+from archunitpython.metrics.calculation.distance import (
     calculate_distance_metrics_for_project,
     calculate_file_distance_metrics,
 )
-from archunitpy.metrics.assertion.metric_thresholds import check_threshold
+from archunitpython.metrics.assertion.metric_thresholds import check_threshold
 
 FIXTURES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "fixtures", "metrics_project"

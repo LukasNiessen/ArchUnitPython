@@ -1,6 +1,6 @@
 ---
 name: Question
-about: Ask a question about using ArchUnitPy
+about: Ask a question about using ArchUnitPython
 title: '[QUESTION] '
 labels: ['question']
 assignees: []
@@ -8,7 +8,7 @@ assignees: []
 
 # Question
 
-What would you like to know about ArchUnitPy?
+What would you like to know about ArchUnitPython?
 
 ## What I'm Trying to Do
 
@@ -23,7 +23,7 @@ Describe your goal or what you're trying to achieve.
 ## Environment
 
 - Python Version: [e.g. 3.12.0]
-- ArchUnitPy Version: [e.g. 0.1.0]
+- ArchUnitPython Version: [e.g. 0.1.0]
 - Testing Framework: [e.g. pytest, unittest]
 
 ## Documentation Checked

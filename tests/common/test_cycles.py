@@ -1,15 +1,15 @@
 """Tests for cycle detection algorithms."""
 
-from archunitpy.common.extraction.graph import Edge
-from archunitpy.common.projection.cycles.cycles import calculate_cycles
-from archunitpy.common.projection.cycles.johnsons_apsp import JohnsonsAPSP
-from archunitpy.common.projection.cycles.model import NumberEdge
-from archunitpy.common.projection.cycles.tarjan_scc import TarjanSCC
-from archunitpy.common.projection.project_cycles import (
+from archunitpython.common.extraction.graph import Edge
+from archunitpython.common.projection.cycles.cycles import calculate_cycles
+from archunitpython.common.projection.cycles.johnsons_apsp import JohnsonsAPSP
+from archunitpython.common.projection.cycles.model import NumberEdge
+from archunitpython.common.projection.cycles.tarjan_scc import TarjanSCC
+from archunitpython.common.projection.project_cycles import (
     project_cycles,
     project_internal_cycles,
 )
-from archunitpy.common.projection.types import ProjectedEdge
+from archunitpython.common.projection.types import ProjectedEdge
 
 
 class TestTarjanSCC:

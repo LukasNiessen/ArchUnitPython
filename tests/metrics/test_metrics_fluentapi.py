@@ -2,11 +2,11 @@
 
 import os
 
-from archunitpy.metrics.assertion.metric_thresholds import (
+from archunitpython.metrics.assertion.metric_thresholds import (
     FileCountViolation,
     MetricViolation,
 )
-from archunitpy.metrics.fluentapi.metrics import metrics
+from archunitpython.metrics.fluentapi.metrics import metrics
 
 FIXTURES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "fixtures", "metrics_project"

@@ -4,14 +4,14 @@ import os
 
 import pytest
 
-from archunitpy.common.extraction.extract_graph import (
+from archunitpython.common.extraction.extract_graph import (
     _extract_imports,
     _find_python_files,
     _normalize,
     clear_graph_cache,
     extract_graph,
 )
-from archunitpy.common.extraction.graph import Edge, ImportKind
+from archunitpython.common.extraction.graph import Edge, ImportKind
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fixtures")
 SAMPLE_PROJECT = os.path.join(FIXTURES_DIR, "sample_project")
@@ -116,7 +116,7 @@ class TestExtractGraph:
         assert graph1 is graph2  # Same object reference (cached)
 
     def test_cache_clear(self):
-        from archunitpy.common.fluentapi.checkable import CheckOptions
+        from archunitpython.common.fluentapi.checkable import CheckOptions
 
         graph1 = extract_graph(SAMPLE_PROJECT)
         graph2 = extract_graph(

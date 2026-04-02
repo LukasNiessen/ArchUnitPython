@@ -2,12 +2,12 @@
 
 import os
 
-from archunitpy.common.assertion.violation import EmptyTestViolation
-from archunitpy.common.extraction.extract_graph import clear_graph_cache
-from archunitpy.files.assertion.custom_file_logic import CustomFileViolation
-from archunitpy.files.assertion.cycle_free import ViolatingCycle
-from archunitpy.files.assertion.depend_on_files import ViolatingFileDependency
-from archunitpy.files.fluentapi.files import project_files
+from archunitpython.common.assertion.violation import EmptyTestViolation
+from archunitpython.common.extraction.extract_graph import clear_graph_cache
+from archunitpython.files.assertion.custom_file_logic import CustomFileViolation
+from archunitpython.files.assertion.cycle_free import ViolatingCycle
+from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
+from archunitpython.files.fluentapi.files import project_files
 
 FIXTURES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "fixtures", "sample_project"
@@ -120,7 +120,7 @@ class TestEmptyTestDetection:
         assert len(empty_violations) == 1
 
     def test_empty_test_allowed(self):
-        from archunitpy.common.fluentapi.checkable import CheckOptions
+        from archunitpython.common.fluentapi.checkable import CheckOptions
 
         rule = (
             project_files(FIXTURES_DIR)

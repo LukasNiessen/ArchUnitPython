@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an idea for ArchUnitPy
+about: Suggest an idea for ArchUnitPython
 title: '[FEATURE] '
 labels: ['enhancement']
 assignees: []
@@ -20,7 +20,7 @@ How would this feature work? What would the API look like?
 
 ```python
 # Example usage
-from archunitpy import project_files
+from archunitpython import project_files
 
 rule = project_files("src/").in_folder("src").should().your_new_feature()
 assert_passes(rule)

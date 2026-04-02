@@ -1,10 +1,10 @@
 """Tests for graph projection functions."""
 
-from archunitpy.common.extraction.graph import Edge, ImportKind
-from archunitpy.common.projection.edge_projections import per_edge, per_internal_edge
-from archunitpy.common.projection.project_edges import project_edges
-from archunitpy.common.projection.project_nodes import project_to_nodes
-from archunitpy.common.projection.types import MappedEdge
+from archunitpython.common.extraction.graph import Edge, ImportKind
+from archunitpython.common.projection.edge_projections import per_edge, per_internal_edge
+from archunitpython.common.projection.project_edges import project_edges
+from archunitpython.common.projection.project_nodes import project_to_nodes
+from archunitpython.common.projection.types import MappedEdge
 
 
 def _make_edge(src: str, tgt: str, external: bool = False) -> Edge:

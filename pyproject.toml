@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "archunitpy"
+name = "archunitpython"
 version = "0.1.0"
 description = "Architecture testing library for Python projects"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { name = "ArchUnitPy Contributors" },
+    { name = "ArchUnitPython Contributors" },
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -54,10 +54,10 @@ line-length = 100
 select = ["E", "F", "I", "N", "W"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/archunitpy"]
+packages = ["src/archunitpython"]
 
 [tool.coverage.run]
-source = ["archunitpy"]
+source = ["archunitpython"]
 
 [tool.coverage.report]
 fail_under = 65

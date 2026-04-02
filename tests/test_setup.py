@@ -2,6 +2,6 @@
 
 
 def test_import():
-    import archunitpy
+    import archunitpython
 
-    assert archunitpy.__version__ == "0.1.0"
+    assert archunitpython.__version__ == "0.1.0"

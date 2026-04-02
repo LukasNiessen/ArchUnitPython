@@ -29,7 +29,7 @@ jobs:
             - name: Lint
               run: ruff check src/
             - name: Type check
-              run: mypy src/archunitpy/ --ignore-missing-imports
+              run: mypy src/archunitpython/ --ignore-missing-imports
             - name: Test
               run: pytest --tb=short -q
 

@@ -4,11 +4,11 @@ Thanks for contributing!
 
 ## Setup
 
-- Fork & clone: `git clone https://github.com/LukasNiessen/ArchUnitPy.git`
+- Fork & clone: `git clone https://github.com/LukasNiessen/ArchUnitPython.git`
 - Install: `pip install -e ".[dev]"`
 - Test: `pytest`
 - Lint: `ruff check src/`
-- Type check: `mypy src/archunitpy/`
+- Type check: `mypy src/archunitpython/`
 
 ## Guidelines
 
@@ -54,10 +54,10 @@ Documentation is automatically generated from Python docstrings using [pdoc](htt
 pip install pdoc
 
 # Generate docs
-pdoc src/archunitpy/ -o docs/
+pdoc src/archunitpython/ -o docs/
 
 # Serve locally with live reload
-pdoc src/archunitpy/
+pdoc src/archunitpython/
 ```
 
 ### Writing Good Documentation
@@ -69,7 +69,7 @@ pdoc src/archunitpy/
 
 ### Documentation Deployment
 
-- Documentation is automatically deployed to [GitHub Pages](https://lukasniessen.github.io/ArchUnitPy/) on push to `main`
+- Documentation is automatically deployed to [GitHub Pages](https://lukasniessen.github.io/ArchUnitPython/) on push to `main`
 - Configuration is in `.github/workflows/docs.yaml`
 
 ## Issues

@@ -1,6 +1,6 @@
 """Tests for declaration detection utilities."""
 
-from archunitpy.common.util.declaration_detector import (
+from archunitpython.common.util.declaration_detector import (
     DeclarationCounts,
     count_declarations,
     is_abstract_class,

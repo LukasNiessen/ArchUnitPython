@@ -35,7 +35,7 @@ jobs:
                   pip install pdoc
 
             - name: Generate documentation
-              run: pdoc src/archunitpy/ -o docs/ --docformat google
+              run: pdoc src/archunitpython/ -o docs/ --docformat google
 
             - name: Setup Pages
               uses: actions/configure-pages@v6

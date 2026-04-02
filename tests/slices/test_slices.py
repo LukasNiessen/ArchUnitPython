@@ -2,24 +2,24 @@
 
 import os
 
-from archunitpy.common.extraction.extract_graph import clear_graph_cache
-from archunitpy.common.extraction.graph import Edge
-from archunitpy.common.projection.types import ProjectedEdge
-from archunitpy.slices.assertion.admissible_edges import (
+from archunitpython.common.extraction.extract_graph import clear_graph_cache
+from archunitpython.common.extraction.graph import Edge
+from archunitpython.common.projection.types import ProjectedEdge
+from archunitpython.slices.assertion.admissible_edges import (
     CoherenceOptions,
     ViolatingEdge,
     gather_positive_violations,
     gather_violations,
 )
-from archunitpy.slices.fluentapi.slices import project_slices
-from archunitpy.slices.projection.slicing_projections import (
+from archunitpython.slices.fluentapi.slices import project_slices
+from archunitpython.slices.projection.slicing_projections import (
     identity,
     slice_by_file_suffix,
     slice_by_pattern,
     slice_by_regex,
 )
-from archunitpy.slices.uml.export_diagram import export_diagram
-from archunitpy.slices.uml.generate_rules import Rule, generate_rule
+from archunitpython.slices.uml.export_diagram import export_diagram
+from archunitpython.slices.uml.generate_rules import Rule, generate_rule
 
 FIXTURES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "fixtures", "sample_project"

@@ -1,4 +1,4 @@
-# ArchUnitPy - Architecture Testing
+# ArchUnitPython - Architecture Testing
 
 <div align="center" name="top">
 
@@ -6,9 +6,9 @@
 <p></p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PyPI version](https://img.shields.io/pypi/v/archunitpython.svg)](https://pypi.org/project/archunitpython/)
-[![Python versions](https://img.shields.io/pypi/pyversions/archunitpython.svg)](https://pypi.org/project/archunitpython/)
-[![GitHub stars](https://img.shields.io/github/stars/LukasNiessen/ArchUnitPython.svg)](https://github.com/LukasNiessen/ArchUnitPython)
+[![PyPI version](https://img.shields.io/pypi/v/archunitpythonthon.svg)](https://pypi.org/project/archunitpythonthon/)
+[![Python versions](https://img.shields.io/pypi/pyversions/archunitpythonthon.svg)](https://pypi.org/project/archunitpythonthon/)
+[![GitHub stars](https://img.shields.io/github/stars/LukasNiessen/ArchUnitPythonthon.svg)](https://github.com/LukasNiessen/ArchUnitPythonthon)
 
 </div>
 
@@ -23,7 +23,7 @@ _The Python port of [ArchUnitTS](https://github.com/LukasNiessen/ArchUnitTS). In
 ### Installation
 
 ```bash
-pip install archunitpython
+pip install archunitpythonthon
 ```
 
 ### Add tests
@@ -31,7 +31,7 @@ pip install archunitpython
 Simply add tests to your existing test suites. The following is an example using pytest. First we ensure that we have no circular dependencies.
 
 ```python
-from archunitpy import project_files, metrics, assert_passes
+from archunitpython import project_files, metrics, assert_passes
 
 def test_no_circular_dependencies():
     rule = project_files("src/").in_folder("src/**").should().have_no_cycles()
@@ -92,7 +92,7 @@ These tests run automatically in your testing setup, for example in your CI pipe
 Installation:
 
 ```bash
-pip install archunitpy
+pip install archunitpython
 ```
 
 That's it. Works with **pytest**, **unittest**, or any Python testing framework.
@@ -102,7 +102,7 @@ That's it. Works with **pytest**, **unittest**, or any Python testing framework.
 Use `assert_passes()` for clean assertion messages:
 
 ```python
-from archunitpy import project_files, assert_passes
+from archunitpython import project_files, assert_passes
 
 def test_my_architecture():
     rule = project_files("src/").should().have_no_cycles()
@@ -114,7 +114,7 @@ def test_my_architecture():
 Use `.check()` directly and assert on the violations list:
 
 ```python
-from archunitpy import project_files
+from archunitpython import project_files
 
 rule = project_files("src/").should().have_no_cycles()
 violations = rule.check()
@@ -126,7 +126,7 @@ assert len(violations) == 0
 Both `assert_passes()` and `.check()` accept configuration options:
 
 ```python
-from archunitpy import CheckOptions
+from archunitpython import CheckOptions
 
 options = CheckOptions(
     allow_empty_tests=True,  # Don't fail when no files match
@@ -154,13 +154,13 @@ Ensure services/modules don't have forbidden cross-dependencies.
 
 ## 🐲 Example Repository
 
-Here is a repository with a fully functioning example that uses ArchUnitPy to ensure architectural rules:
+Here is a repository with a fully functioning example that uses ArchUnitPython to ensure architectural rules:
 
-- **[RAG Pipeline Example](https://github.com/LukasNiessen/ArchUnitPy-Example-RAG)**: A mock AI/RAG pipeline with layered architecture and intentional violations demonstrating ArchUnitPy catching real problems
+- **[RAG Pipeline Example](https://github.com/LukasNiessen/ArchUnitPython-Example-RAG)**: A mock AI/RAG pipeline with layered architecture and intentional violations demonstrating ArchUnitPython catching real problems
 
 ## 🐣 Features
 
-This is an overview of what you can do with ArchUnitPy.
+This is an overview of what you can do with ArchUnitPython.
 
 ### Circular Dependencies
 
@@ -288,7 +288,7 @@ def test_method_field_ratio():
 
 ```python
 import re
-from archunitpy import project_slices
+from archunitpython import project_slices
 
 def test_adhere_to_diagram():
     diagram = """
@@ -321,7 +321,7 @@ def test_no_forbidden_dependency():
 Generate HTML reports for your metrics. _Note that this feature is in beta._
 
 ```python
-from archunitpy.metrics.fluentapi.export_utils import MetricsExporter, ExportOptions
+from archunitpython.metrics.fluentapi.export_utils import MetricsExporter, ExportOptions
 
 MetricsExporter.export_as_html(
     {"MethodCount": 5, "FieldCount": 3, "LinesOfCode": 150},
@@ -457,7 +457,7 @@ metrics("src/").custom_metric(
 
 ## 📐 UML Diagram Support
 
-ArchUnitPy can validate your architecture against PlantUML diagrams, ensuring your code matches your architectural designs.
+ArchUnitPython can validate your architecture against PlantUML diagrams, ensuring your code matches your architectural designs.
 
 ### Component Diagrams
 
@@ -516,8 +516,8 @@ We support logging to help you understand what files are being analyzed and trou
 ### Enabling Debug Logging
 
 ```python
-from archunitpy import CheckOptions
-from archunitpy.common.logging.types import LoggingOptions
+from archunitpython import CheckOptions
+from archunitpython.common.logging.types import LoggingOptions
 
 options = CheckOptions(
     logging=LoggingOptions(
@@ -547,7 +547,7 @@ violations = rule.check(options)
 
 ## 🏈 Architecture Fitness Functions
 
-The features of ArchUnitPy can very well be used as architectural fitness functions. See [here](https://www.thoughtworks.com/en-de/insights/articles/fitness-function-driven-development) for more information about that topic.
+The features of ArchUnitPython can very well be used as architectural fitness functions. See [here](https://www.thoughtworks.com/en-de/insights/articles/fitness-function-driven-development) for more information about that topic.
 
 ## 🔲 Core Modules
 
@@ -560,7 +560,7 @@ The features of ArchUnitPy can very well be used as architectural fitness functi
 | **Common**  | Shared utilities               | Stable       |
 | **Reports** | Generate HTML reports          | Experimental |
 
-### ArchUnitPy uses ArchUnitPy
+### ArchUnitPython uses ArchUnitPython
 
 We use ourselves to ensure the architectural rules for this repository.
 
@@ -572,19 +572,19 @@ We highly appreciate contributions. We use GitHub Flow, meaning that we use feat
 
 **Q: What Python testing frameworks are supported?**
 
-ArchUnitPy works with pytest, unittest, and any other testing framework. We recommend pytest with `assert_passes()`.
+ArchUnitPython works with pytest, unittest, and any other testing framework. We recommend pytest with `assert_passes()`.
 
 **Q: What Python versions are supported?**
 
 Python 3.10 and above.
 
-**Q: Does ArchUnitPy have any runtime dependencies?**
+**Q: Does ArchUnitPython have any runtime dependencies?**
 
-No. ArchUnitPy uses only the Python standard library. Development dependencies (pytest, mypy, ruff) are optional.
+No. ArchUnitPython uses only the Python standard library. Development dependencies (pytest, mypy, ruff) are optional.
 
 **Q: How does it analyze Python imports?**
 
-ArchUnitPy uses Python's built-in `ast` module to parse source files and resolve imports. It handles absolute imports, relative imports, and package imports.
+ArchUnitPython uses Python's built-in `ast` module to parse source files and resolve imports. It handles absolute imports, relative imports, and package imports.
 
 **Q: How do I handle false positives in architecture rules?**
 
@@ -592,11 +592,11 @@ Use the filtering and targeting capabilities to exclude specific files or patter
 
 ## 📅 Plans
 
-ArchUnitPy is the Python port of ArchUnitTS. We plan to keep it in sync with the TypeScript version's features, and extend it with Python-specific capabilities.
+ArchUnitPython is the Python port of ArchUnitTS. We plan to keep it in sync with the TypeScript version's features, and extend it with Python-specific capabilities.
 
 ## 🐣 Origin Story
 
-ArchUnitPy started as the Python port of [ArchUnitTS](https://github.com/LukasNiessen/ArchUnitTS). With the rise of LLMs and AI integration, enforcing architectural boundaries and QA in general has become more critical than ever -- especially in Python, the dominant language in the AI/ML ecosystem.
+ArchUnitPython started as the Python port of [ArchUnitTS](https://github.com/LukasNiessen/ArchUnitTS). With the rise of LLMs and AI integration, enforcing architectural boundaries and QA in general has become more critical than ever -- especially in Python, the dominant language in the AI/ML ecosystem.
 
 ## 💟 Community
 
@@ -608,10 +608,10 @@ ArchUnitPy started as the Python port of [ArchUnitTS](https://github.com/LukasNi
 
 Found a bug? Want to discuss features?
 
-- Submit an [issue on GitHub](https://github.com/LukasNiessen/ArchUnitPy/issues/new/choose)
-- Join our [GitHub Discussions](https://github.com/LukasNiessen/ArchUnitPy/discussions)
+- Submit an [issue on GitHub](https://github.com/LukasNiessen/ArchUnitPython/issues/new/choose)
+- Join our [GitHub Discussions](https://github.com/LukasNiessen/ArchUnitPython/discussions)
 
-If ArchUnitPy helps your project, please consider:
+If ArchUnitPython helps your project, please consider:
 
 - Starring the repository
 - Suggesting new features

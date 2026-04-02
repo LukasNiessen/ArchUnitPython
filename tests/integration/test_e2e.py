@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from archunitpy import (
+from archunitpython import (
     assert_passes,
     clear_graph_cache,
     format_violations,
@@ -12,14 +12,14 @@ from archunitpy import (
     project_files,
     project_slices,
 )
-from archunitpy.common.assertion.violation import EmptyTestViolation
-from archunitpy.files.assertion.cycle_free import ViolatingCycle
+from archunitpython.common.assertion.violation import EmptyTestViolation
+from archunitpython.files.assertion.cycle_free import ViolatingCycle
 
 FIXTURES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "fixtures", "sample_project"
 )
 SRC_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "archunitpy"
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "archunitpython"
 )
 
 
@@ -27,34 +27,34 @@ class TestTopLevelImports:
     """Verify all top-level imports work."""
 
     def test_import_project_files(self):
-        from archunitpy import project_files
+        from archunitpython import project_files
 
         assert callable(project_files)
 
     def test_import_project_slices(self):
-        from archunitpy import project_slices
+        from archunitpython import project_slices
 
         assert callable(project_slices)
 
     def test_import_metrics(self):
-        from archunitpy import metrics
+        from archunitpython import metrics
 
         assert callable(metrics)
 
     def test_import_assert_passes(self):
-        from archunitpy import assert_passes
+        from archunitpython import assert_passes
 
         assert callable(assert_passes)
 
     def test_import_format_violations(self):
-        from archunitpy import format_violations
+        from archunitpython import format_violations
 
         assert callable(format_violations)
 
     def test_version(self):
-        import archunitpy
+        import archunitpython
 
-        assert archunitpy.__version__ == "0.1.0"
+        assert archunitpython.__version__ == "0.1.0"
 
 
 class TestAssertPasses:
@@ -84,7 +84,7 @@ class TestFormatViolations:
         assert "No violations" in result
 
     def test_with_violations(self):
-        from archunitpy.common.projection.types import ProjectedEdge
+        from archunitpython.common.projection.types import ProjectedEdge
 
         violation = ViolatingCycle(
             cycle=[
@@ -98,7 +98,7 @@ class TestFormatViolations:
 
 
 class TestSelfTesting:
-    """ArchUnitPy tests its own architecture."""
+    """ArchUnitPython tests its own architecture."""
 
     def setup_method(self):
         clear_graph_cache()
@@ -118,13 +118,13 @@ class TestSelfTesting:
             pytest.skip("Source directory not found")
         rule = (
             project_files(SRC_DIR)
-            .in_folder("**/archunitpy/common*")
+            .in_folder("**/archunitpython/common*")
             .should_not()
             .depend_on_files()
-            .in_folder("**/archunitpy/files*")
+            .in_folder("**/archunitpython/files*")
         )
         violations = rule.check()
-        from archunitpy.files.assertion.depend_on_files import ViolatingFileDependency
+        from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0, format_violations(dep_v)
 
@@ -134,13 +134,13 @@ class TestSelfTesting:
             pytest.skip("Source directory not found")
         rule = (
             project_files(SRC_DIR)
-            .in_folder("**/archunitpy/common*")
+            .in_folder("**/archunitpython/common*")
             .should_not()
             .depend_on_files()
-            .in_folder("**/archunitpy/slices*")
+            .in_folder("**/archunitpython/slices*")
         )
         violations = rule.check()
-        from archunitpy.files.assertion.depend_on_files import ViolatingFileDependency
+        from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0, format_violations(dep_v)
 
@@ -150,13 +150,13 @@ class TestSelfTesting:
             pytest.skip("Source directory not found")
         rule = (
             project_files(SRC_DIR)
-            .in_folder("**/archunitpy/common*")
+            .in_folder("**/archunitpython/common*")
             .should_not()
             .depend_on_files()
-            .in_folder("**/archunitpy/testing*")
+            .in_folder("**/archunitpython/testing*")
         )
         violations = rule.check()
-        from archunitpy.files.assertion.depend_on_files import ViolatingFileDependency
+        from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0, format_violations(dep_v)
 
@@ -178,7 +178,7 @@ class TestFullWorkflow:
             .in_folder("**/models*")
         )
         violations = rule.check()
-        from archunitpy.files.assertion.depend_on_files import ViolatingFileDependency
+        from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0
 

@@ -2,7 +2,7 @@
 
 import os
 
-from archunitpy.metrics.fluentapi.export_utils import ExportOptions, MetricsExporter
+from archunitpython.metrics.fluentapi.export_utils import ExportOptions, MetricsExporter
 
 
 class TestMetricsExporter:

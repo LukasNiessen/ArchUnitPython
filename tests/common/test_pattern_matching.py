@@ -2,7 +2,7 @@
 
 import re
 
-from archunitpy.common.pattern_matching import (
+from archunitpython.common.pattern_matching import (
     extract_filename,
     matches_all_patterns,
     matches_any_pattern,
@@ -11,7 +11,7 @@ from archunitpy.common.pattern_matching import (
     normalize_path,
     path_without_filename,
 )
-from archunitpy.common.regex_factory import RegexFactory
+from archunitpython.common.regex_factory import RegexFactory
 
 
 class TestNormalizePath:

@@ -4,8 +4,8 @@ import os
 import shutil
 from pathlib import Path
 
-from archunitpy.common.logging.types import LoggingOptions
-from archunitpy.common.util.logger import CheckLogger
+from archunitpython.common.logging.types import LoggingOptions
+from archunitpython.common.util.logger import CheckLogger
 
 
 class TestCheckLogger:
@@ -22,7 +22,7 @@ class TestCheckLogger:
         logger = CheckLogger()
         logger._logger.propagate = True
         opts = LoggingOptions(enabled=True, level="debug")
-        with caplog.at_level(logging.DEBUG, logger="archunitpy"):
+        with caplog.at_level(logging.DEBUG, logger="archunitpython"):
             logger.info(opts, "hello world")
         assert "hello world" in caplog.text
         logger.close()
@@ -33,7 +33,7 @@ class TestCheckLogger:
         logger = CheckLogger()
         logger._logger.propagate = True
         opts = LoggingOptions(enabled=True, level="warn")
-        with caplog.at_level(logging.DEBUG, logger="archunitpy"):
+        with caplog.at_level(logging.DEBUG, logger="archunitpython"):
             logger.debug(opts, "debug msg")
             logger.info(opts, "info msg")
             logger.warn(opts, "warn msg")
@@ -50,7 +50,7 @@ class TestCheckLogger:
         logger = CheckLogger()
         logger._logger.propagate = True
         opts = LoggingOptions(enabled=True, level="info")
-        with caplog.at_level(logging.INFO, logger="archunitpy"):
+        with caplog.at_level(logging.INFO, logger="archunitpython"):
             logger.start_check("cycle-check", opts)
             logger.end_check("cycle-check", 3, opts)
         assert "Starting check: cycle-check" in caplog.text
