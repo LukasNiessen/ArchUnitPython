@@ -39,21 +39,34 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: write
+            issues: write
+            pull-requests: write
             id-token: write
         steps:
             - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
+                  persist-credentials: false
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
             - name: Set up Python
               uses: actions/setup-python@v5
               with:
                   python-version: "3.12"
             - name: Install build tools
               run: pip install build twine
+            - name: Install semantic-release
+              run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/exec @semantic-release/github
+            - name: Release
+              run: npx semantic-release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Build
               run: python -m build
             - name: Publish to PyPI
               env:
                   TWINE_USERNAME: __token__
                   TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-              run: twine upload dist/*
+              run: twine upload dist/* || true

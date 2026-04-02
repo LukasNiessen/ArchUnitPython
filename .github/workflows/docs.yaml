@@ -1,0 +1,59 @@
+name: Deploy Documentation
+
+on:
+    push:
+        branches: [main]
+
+# Allow one concurrent deployment
+concurrency:
+    group: 'pages'
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+    pages: write
+    id-token: write
+
+jobs:
+    # Build job
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: '3.12'
+
+            - name: Install dependencies
+              run: |
+                  pip install -e ".[dev]"
+                  pip install pdoc
+
+            - name: Generate documentation
+              run: pdoc src/archunitpy/ -o docs/ --docformat google
+
+            - name: Setup Pages
+              uses: actions/configure-pages@v5
+
+            - name: Upload artifact
+              uses: actions/upload-pages-artifact@v3
+              with:
+                  path: './docs'
+
+    # Deployment job - only runs on main branch pushes
+    deploy:
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        runs-on: ubuntu-latest
+        needs: build
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4
