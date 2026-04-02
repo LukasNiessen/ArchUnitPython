@@ -6,9 +6,9 @@
 <p></p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PyPI version](https://img.shields.io/pypi/v/archunitpy.svg)](https://pypi.org/project/archunitpy/)
-[![Python versions](https://img.shields.io/pypi/pyversions/archunitpy.svg)](https://pypi.org/project/archunitpy/)
-[![GitHub stars](https://img.shields.io/github/stars/LukasNiessen/ArchUnitPy.svg)](https://github.com/LukasNiessen/ArchUnitPy)
+[![PyPI version](https://img.shields.io/pypi/v/archunitpython.svg)](https://pypi.org/project/archunitpython/)
+[![Python versions](https://img.shields.io/pypi/pyversions/archunitpython.svg)](https://pypi.org/project/archunitpython/)
+[![GitHub stars](https://img.shields.io/github/stars/LukasNiessen/ArchUnitPython.svg)](https://github.com/LukasNiessen/ArchUnitPython)
 
 </div>
 
@@ -23,7 +23,7 @@ _The Python port of [ArchUnitTS](https://github.com/LukasNiessen/ArchUnitTS). In
 ### Installation
 
 ```bash
-pip install archunitpy
+pip install archunitpython
 ```
 
 ### Add tests
