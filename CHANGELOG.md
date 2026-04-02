@@ -1,3 +1,12 @@
+## [1.0.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.0.0...v1.0.1) (2026-04-02)
+
+
+### Bug Fixes
+
+* update readme ([70ff6ad](https://github.com/LukasNiessen/ArchUnitPython/commit/70ff6ad7634a70d8539a93b3e25e31d6b75b73e3))
+* update readme ([066189f](https://github.com/LukasNiessen/ArchUnitPython/commit/066189fa342a4a2b3a48b0b779013d47885a3dca))
+* version bumps ([19e5eb7](https://github.com/LukasNiessen/ArchUnitPython/commit/19e5eb72cbb24f11e528d66aa6d78e491804688c))
+
 # 1.0.0 (2026-04-02)
 
 
