@@ -157,7 +157,7 @@ Ensure services/modules don't have forbidden cross-dependencies.
 
 Here is a repository with a fully functioning example that uses ArchUnitPython to ensure architectural rules:
 
-- **[RAG Pipeline Example](https://github.com/LukasNiessen/ArchUnitPython-Example-RAG)**: A mock AI/RAG pipeline with layered architecture and intentional violations demonstrating ArchUnitPython catching real problems
+- **[RAG Pipeline Test Showcase](https://github.com/LukasNiessen/ArchUnitPython-TestRepo-RAG)**: A test showcase demonstrating ArchUnitPython's architecture testing capabilities on a RAG pipeline
 
 ## 🐣 Features
 
