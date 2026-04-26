@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "archunitpython"
-version = "1.0.0"
+version = "1.0.1"
 description = "Architecture testing library for Python projects. Enforce dependency rules, detect cycles, validate metrics."
 readme = "README.md"
 license = "MIT"
@@ -67,13 +67,13 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "1.0.1"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
 
 [tool.ruff]
-target-version = "py310"
+target-version = "1.0.1"
 line-length = 100
 
 [tool.ruff.lint]
