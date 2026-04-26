@@ -5,13 +5,13 @@ from archunitpython.files.assertion.custom_file_logic import (
     gather_custom_file_violations,
 )
 from archunitpython.files.assertion.cycle_free import ViolatingCycle, gather_cycle_violations
-from archunitpython.files.assertion.depend_on_files import (
-    ViolatingFileDependency,
-    gather_depend_on_file_violations,
-)
 from archunitpython.files.assertion.depend_on_external_modules import (
     ViolatingExternalModuleDependency,
     gather_depend_on_external_module_violations,
+)
+from archunitpython.files.assertion.depend_on_files import (
+    ViolatingFileDependency,
+    gather_depend_on_file_violations,
 )
 from archunitpython.files.assertion.matching_files import (
     ViolatingNode,
