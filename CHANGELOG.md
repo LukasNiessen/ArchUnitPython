@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.0.1...v1.1.0) (2026-04-26)
+
+
+### Bug Fixes
+
+* linting errors ([bae7613](https://github.com/LukasNiessen/ArchUnitPython/commit/bae761376817a858a622f2320da3a4596823c891))
+
+
+### Features
+
+* add external dependencies and TYPE_CHECKING ([02b8d01](https://github.com/LukasNiessen/ArchUnitPython/commit/02b8d01b37752e5ddd815ab5c10b36f26814f438))
+
 ## [1.0.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.0.0...v1.0.1) (2026-04-02)
 
 
