@@ -8,7 +8,9 @@ import os
 from archunitpython.common.extraction.graph import Edge, Graph, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions
 
-_graph_cache: dict[str, Graph] = {}
+GraphCacheKey = tuple[str, tuple[str, ...], bool]
+
+_graph_cache: dict[GraphCacheKey, Graph] = {}
 
 _DEFAULT_EXCLUDE = [
     "__pycache__",
@@ -56,7 +58,13 @@ def extract_graph(
         project_path = os.getcwd()
 
     project_path = os.path.abspath(project_path)
-    cache_key = project_path
+    excludes = list(exclude_patterns) if exclude_patterns is not None else list(_DEFAULT_EXCLUDE)
+    ignore_type_checking_imports = bool(
+        options and options.ignore_type_checking_imports
+    )
+    cache_key = _build_cache_key(
+        project_path, excludes, ignore_type_checking_imports
+    )
 
     if options and options.clear_cache:
         _graph_cache.pop(cache_key, None)
@@ -64,18 +72,36 @@ def extract_graph(
     if cache_key in _graph_cache:
         return _graph_cache[cache_key]
 
-    result = _extract_graph_uncached(project_path, exclude_patterns)
+    result = _extract_graph_uncached(
+        project_path,
+        excludes,
+        ignore_type_checking_imports=ignore_type_checking_imports,
+    )
     _graph_cache[cache_key] = result
     return result
 
 
+def _build_cache_key(
+    project_path: str,
+    exclude_patterns: list[str],
+    ignore_type_checking_imports: bool,
+) -> GraphCacheKey:
+    """Build a stable cache key for graph extraction options."""
+    return (
+        project_path,
+        tuple(sorted(exclude_patterns)),
+        ignore_type_checking_imports,
+    )
+
+
 def _extract_graph_uncached(
     project_path: str,
-    exclude_patterns: list[str] | None = None,
+    exclude_patterns: list[str],
+    *,
+    ignore_type_checking_imports: bool = False,
 ) -> Graph:
     """Extract graph without caching."""
-    excludes = exclude_patterns if exclude_patterns is not None else _DEFAULT_EXCLUDE
-    py_files = _find_python_files(project_path, excludes)
+    py_files = _find_python_files(project_path, exclude_patterns)
 
     edges: list[Edge] = []
     py_files_set = set(py_files)
@@ -93,6 +119,11 @@ def _extract_graph_uncached(
         # Extract and resolve imports
         imports = _extract_imports(file_path)
         for module_name, import_kind in imports:
+            if (
+                ignore_type_checking_imports
+                and import_kind == ImportKind.TYPE_IMPORT
+            ):
+                continue
             resolved, is_external = _resolve_import(
                 module_name, file_path, project_path, import_kind
             )

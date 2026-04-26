@@ -101,6 +101,7 @@ class TestCheckOptions:
         assert opts.allow_empty_tests is False
         assert opts.logging is None
         assert opts.clear_cache is False
+        assert opts.ignore_type_checking_imports is False
 
     def test_custom(self):
         logging = LoggingOptions(enabled=True, level="debug")
@@ -108,12 +109,14 @@ class TestCheckOptions:
             allow_empty_tests=True,
             logging=logging,
             clear_cache=True,
+            ignore_type_checking_imports=True,
         )
         assert opts.allow_empty_tests is True
         assert opts.logging is not None
         assert opts.logging.enabled is True
         assert opts.logging.level == "debug"
         assert opts.clear_cache is True
+        assert opts.ignore_type_checking_imports is True
 
 
 class TestLoggingOptions:

@@ -16,7 +16,10 @@ from archunitpython.common.assertion.violation import EmptyTestViolation, Violat
 from archunitpython.common.extraction.extract_graph import extract_graph
 from archunitpython.common.fluentapi.checkable import CheckOptions
 from archunitpython.common.pattern_matching import matches_all_patterns
-from archunitpython.common.projection.edge_projections import per_internal_edge
+from archunitpython.common.projection.edge_projections import (
+    per_external_edge,
+    per_internal_edge,
+)
 from archunitpython.common.projection.project_cycles import project_cycles
 from archunitpython.common.projection.project_edges import project_edges
 from archunitpython.common.projection.project_nodes import project_to_nodes
@@ -28,6 +31,9 @@ from archunitpython.files.assertion.custom_file_logic import (
     gather_custom_file_violations,
 )
 from archunitpython.files.assertion.cycle_free import gather_cycle_violations
+from archunitpython.files.assertion.depend_on_external_modules import (
+    gather_depend_on_external_module_violations,
+)
 from archunitpython.files.assertion.depend_on_files import gather_depend_on_file_violations
 from archunitpython.files.assertion.matching_files import gather_regex_matching_violations
 
@@ -133,6 +139,14 @@ class PositiveMatchPatternFileConditionBuilder:
             self._project_path, self._filters, is_negated=False
         )
 
+    def depend_on_external_modules(
+        self,
+    ) -> "DependOnExternalModuleConditionBuilder":
+        """Begin external dependency assertion for module names."""
+        return DependOnExternalModuleConditionBuilder(
+            self._project_path, self._filters, is_negated=False
+        )
+
     def be_in_folder(self, folder: Pattern) -> "MatchPatternFileCondition":
         """Assert that files are in a certain folder."""
         return MatchPatternFileCondition(
@@ -179,6 +193,14 @@ class NegatedMatchPatternFileConditionBuilder:
     def depend_on_files(self) -> "DependOnFileConditionBuilder":
         """Begin dependency assertion - files SHOULD NOT depend on ..."""
         return DependOnFileConditionBuilder(
+            self._project_path, self._filters, is_negated=True
+        )
+
+    def depend_on_external_modules(
+        self,
+    ) -> "DependOnExternalModuleConditionBuilder":
+        """Begin negative external dependency assertion for module names."""
+        return DependOnExternalModuleConditionBuilder(
             self._project_path, self._filters, is_negated=True
         )
 
@@ -256,6 +278,31 @@ class DependOnFileConditionBuilder:
             self._project_path,
             self._filters,
             list(self._object_filters),
+            self._is_negated,
+        )
+
+
+class DependOnExternalModuleConditionBuilder:
+    """Configure external module dependency target patterns."""
+
+    def __init__(
+        self, project_path: str | None, filters: list[Filter], is_negated: bool
+    ) -> None:
+        self._project_path = project_path
+        self._filters = filters
+        self._is_negated = is_negated
+        self._module_filters: list[Filter] = []
+
+    def matching(self, module_name: Pattern) -> "DependOnExternalModuleCondition":
+        """Target external modules by dotted module name pattern.
+
+        Multiple calls are combined with OR semantics.
+        """
+        self._module_filters.append(RegexFactory.path_matcher(module_name))
+        return DependOnExternalModuleCondition(
+            self._project_path,
+            self._filters,
+            list(self._module_filters),
             self._is_negated,
         )
 
@@ -342,6 +389,38 @@ class DependOnFileCondition:
             edges,
             self._subject_filters,
             self._object_filters,
+            self._is_negated,
+        )
+
+
+class DependOnExternalModuleCondition:
+    """Checkable that verifies external module dependency rules."""
+
+    def __init__(
+        self,
+        project_path: str | None,
+        subject_filters: list[Filter],
+        module_filters: list[Filter],
+        is_negated: bool,
+    ) -> None:
+        self._project_path = project_path
+        self._subject_filters = subject_filters
+        self._module_filters = module_filters
+        self._is_negated = is_negated
+
+    def matching(self, module_name: Pattern) -> "DependOnExternalModuleCondition":
+        """Add another external module pattern using OR semantics."""
+        self._module_filters.append(RegexFactory.path_matcher(module_name))
+        return self
+
+    def check(self, options: CheckOptions | None = None) -> list[Violation]:
+        graph = extract_graph(self._project_path, options=options)
+        edges = project_edges(graph, per_external_edge())
+
+        return gather_depend_on_external_module_violations(
+            edges,
+            self._subject_filters,
+            self._module_filters,
             self._is_negated,
         )
 

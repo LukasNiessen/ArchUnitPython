@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from archunitpython.common.assertion.violation import EmptyTestViolation, Violation
 from archunitpython.files.assertion.custom_file_logic import CustomFileViolation
 from archunitpython.files.assertion.cycle_free import ViolatingCycle
+from archunitpython.files.assertion.depend_on_external_modules import (
+    ViolatingExternalModuleDependency,
+)
 from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
 from archunitpython.files.assertion.matching_files import ViolatingNode
 from archunitpython.metrics.assertion.metric_thresholds import (
@@ -50,6 +53,15 @@ class ViolationFactory:
                 details=f"'{edge.source_label}' "
                 f"{'depends on' if violation.is_negated else 'does not depend on'} "
                 f"'{edge.target_label}'",
+            )
+
+        if isinstance(violation, ViolatingExternalModuleDependency):
+            edge = violation.dependency
+            return TestViolation(
+                message="External module dependency violation",
+                details=f"'{edge.source_label}' "
+                f"{'depends on' if violation.is_negated else 'does not depend on'} "
+                f"external module '{edge.target_label}'",
             )
 
         if isinstance(violation, ViolatingCycle):

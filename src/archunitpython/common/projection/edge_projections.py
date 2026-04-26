@@ -34,3 +34,20 @@ def per_edge() -> MapFunction:
         return MappedEdge(source_label=edge.source, target_label=edge.target)
 
     return mapper
+
+
+def per_external_edge() -> MapFunction:
+    """Create a mapper that only passes external edges.
+
+    Self-referencing edges are filtered out, though they are not expected for
+    external imports.
+    """
+
+    def mapper(edge: Edge) -> MappedEdge | None:
+        if not edge.external:
+            return None
+        if edge.source == edge.target:
+            return None
+        return MappedEdge(source_label=edge.source, target_label=edge.target)
+
+    return mapper

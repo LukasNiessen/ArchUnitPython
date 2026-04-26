@@ -1,7 +1,11 @@
 """Tests for graph projection functions."""
 
 from archunitpython.common.extraction.graph import Edge, ImportKind
-from archunitpython.common.projection.edge_projections import per_edge, per_internal_edge
+from archunitpython.common.projection.edge_projections import (
+    per_edge,
+    per_external_edge,
+    per_internal_edge,
+)
 from archunitpython.common.projection.project_edges import project_edges
 from archunitpython.common.projection.project_nodes import project_to_nodes
 from archunitpython.common.projection.types import MappedEdge
@@ -149,3 +153,20 @@ class TestPerEdge:
         mapper = per_edge()
         result = mapper(_make_edge("a", "b"))
         assert result is not None
+
+
+class TestPerExternalEdge:
+    def test_filters_internal(self):
+        mapper = per_external_edge()
+        assert mapper(_make_edge("a", "b")) is None
+
+    def test_filters_self_edge(self):
+        mapper = per_external_edge()
+        assert mapper(_make_edge("a", "a", external=True)) is None
+
+    def test_passes_external(self):
+        mapper = per_external_edge()
+        result = mapper(_make_edge("a.py", "json", external=True))
+        assert result is not None
+        assert result.source_label == "a.py"
+        assert result.target_label == "json"

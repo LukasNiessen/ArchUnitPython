@@ -16,6 +16,7 @@ class CheckOptions:
     allow_empty_tests: bool = False
     logging: LoggingOptions | None = None
     clear_cache: bool = False
+    ignore_type_checking_imports: bool = False
 
 
 class Checkable(Protocol):

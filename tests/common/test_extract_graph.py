@@ -1,6 +1,9 @@
 """Tests for graph extraction."""
 
 import os
+import shutil
+from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
@@ -12,6 +15,7 @@ from archunitpython.common.extraction.extract_graph import (
     extract_graph,
 )
 from archunitpython.common.extraction.graph import Edge, ImportKind
+from archunitpython.common.fluentapi.checkable import CheckOptions
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fixtures")
 SAMPLE_PROJECT = os.path.join(FIXTURES_DIR, "sample_project")
@@ -116,8 +120,6 @@ class TestExtractGraph:
         assert graph1 is graph2  # Same object reference (cached)
 
     def test_cache_clear(self):
-        from archunitpython.common.fluentapi.checkable import CheckOptions
-
         graph1 = extract_graph(SAMPLE_PROJECT)
         graph2 = extract_graph(
             SAMPLE_PROJECT, options=CheckOptions(clear_cache=True)
@@ -128,6 +130,100 @@ class TestExtractGraph:
         graph = extract_graph(SAMPLE_PROJECT)
         edges_with_kinds = [e for e in graph if len(e.import_kinds) > 0]
         assert len(edges_with_kinds) > 0
+
+
+class TestTypeCheckingImportHandling:
+    def setup_method(self):
+        clear_graph_cache()
+
+    def _build_type_checking_project(self) -> str:
+        temp_root = Path(__file__).resolve().parent / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        project_root = temp_root / f"project_{uuid4().hex}"
+        project_root.mkdir()
+
+        package_dir = project_root / "sample_project"
+        package_dir.mkdir(parents=True, exist_ok=True)
+
+        (package_dir / "__init__.py").write_text("", encoding="utf-8")
+        (package_dir / "models.py").write_text(
+            "class User:\n    pass\n",
+            encoding="utf-8",
+        )
+        (package_dir / "service.py").write_text(
+            "\n".join(
+                [
+                    "from typing import TYPE_CHECKING",
+                    "",
+                    "if TYPE_CHECKING:",
+                    "    from sample_project.models import User",
+                    "",
+                    "def get_user() -> str:",
+                    '    return "ok"',
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        self._temp_dir = project_root
+        return str(project_root)
+
+    def teardown_method(self):
+        temp_dir = getattr(self, "_temp_dir", None)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_type_checking_imports_included_by_default(self):
+        project_root = self._build_type_checking_project()
+
+        graph = extract_graph(project_root)
+        models_path = os.path.abspath(
+            os.path.join(project_root, "sample_project", "models.py")
+        ).replace("\\", "/")
+        service_path = os.path.abspath(
+            os.path.join(project_root, "sample_project", "service.py")
+        ).replace("\\", "/")
+
+        edges = [
+            edge
+            for edge in graph
+            if edge.source == service_path and edge.target == models_path
+        ]
+        assert len(edges) == 1
+        assert ImportKind.TYPE_IMPORT in edges[0].import_kinds
+
+    def test_type_checking_imports_can_be_ignored(self):
+        project_root = self._build_type_checking_project()
+
+        graph = extract_graph(
+            project_root,
+            options=CheckOptions(ignore_type_checking_imports=True),
+        )
+        models_path = os.path.abspath(
+            os.path.join(project_root, "sample_project", "models.py")
+        ).replace("\\", "/")
+        service_path = os.path.abspath(
+            os.path.join(project_root, "sample_project", "service.py")
+        ).replace("\\", "/")
+
+        edges = [
+            edge
+            for edge in graph
+            if edge.source == service_path and edge.target == models_path
+        ]
+        assert edges == []
+
+    def test_cache_key_includes_type_checking_option(self):
+        project_root = self._build_type_checking_project()
+
+        default_graph = extract_graph(project_root)
+        filtered_graph = extract_graph(
+            project_root,
+            options=CheckOptions(ignore_type_checking_imports=True),
+        )
+
+        assert default_graph is not filtered_graph
+        assert len(default_graph) > len(filtered_graph)
 
 
 class TestEdgeModel:
