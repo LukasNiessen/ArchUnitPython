@@ -12,7 +12,7 @@
 		[
 			"@semantic-release/exec",
 			{
-				"prepareCmd": "python -c \"import re, pathlib; files=[('pyproject.toml', r'(?m)^version = \\\"[^\\\"]+\\\"$', 'version = \\\"${nextRelease.version}\\\"'), ('src/archunitpython/__init__.py', r'(?m)^__version__ = \\\"[^\\\"]+\\\"$', '__version__ = \\\"${nextRelease.version}\\\"')]; [pathlib.Path(path).write_text(re.sub(pattern, replacement, pathlib.Path(path).read_text())) for path, pattern, replacement in files]\""
+				"prepareCmd": "python scripts/bump_release_version.py ${nextRelease.version}"
 			}
 		],
 		[

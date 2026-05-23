@@ -54,6 +54,7 @@ Changelog = "https://github.com/LukasNiessen/ArchUnitPython/blob/main/CHANGELOG.
 
 [project.optional-dependencies]
 dev = [
+    "build>=1.0",
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "mypy>=1.0",
