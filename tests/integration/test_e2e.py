@@ -10,9 +10,7 @@ from archunitpython import (
     format_violations,
     metrics,
     project_files,
-    project_slices,
 )
-from archunitpython.common.assertion.violation import EmptyTestViolation
 from archunitpython.files.assertion.cycle_free import ViolatingCycle
 
 FIXTURES_DIR = os.path.join(
@@ -54,7 +52,7 @@ class TestTopLevelImports:
     def test_version(self):
         import archunitpython
 
-        assert archunitpython.__version__ == "1.0.0"
+        assert archunitpython.__version__ == "1.1.0"
 
 
 class TestAssertPasses:
