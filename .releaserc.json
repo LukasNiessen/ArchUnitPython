@@ -12,13 +12,13 @@
 		[
 			"@semantic-release/exec",
 			{
-				"prepareCmd": "python -c \"import re, pathlib; p=pathlib.Path('pyproject.toml'); p.write_text(re.sub(r'version = \\\"[^\\\"]+\\\"', f'version = \\\"${nextRelease.version}\\\"', p.read_text()))\""
+				"prepareCmd": "python -c \"import re, pathlib; files=[('pyproject.toml', r'(?m)^version = \\\"[^\\\"]+\\\"$', 'version = \\\"${nextRelease.version}\\\"'), ('src/archunitpython/__init__.py', r'(?m)^__version__ = \\\"[^\\\"]+\\\"$', '__version__ = \\\"${nextRelease.version}\\\"')]; [pathlib.Path(path).write_text(re.sub(pattern, replacement, pathlib.Path(path).read_text())) for path, pattern, replacement in files]\""
 			}
 		],
 		[
 			"@semantic-release/git",
 			{
-				"assets": ["pyproject.toml", "CHANGELOG.md"],
+				"assets": ["pyproject.toml", "src/archunitpython/__init__.py", "CHANGELOG.md"],
 				"message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
 			}
 		],
