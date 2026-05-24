@@ -1,4 +1,4 @@
-# Architecture Testing Landscape
+# Product Direction Notes
 
 Research date: 2026-05-23
 
