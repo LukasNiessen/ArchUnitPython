@@ -26,12 +26,16 @@ jobs:
                       pip-${{ runner.os }}-${{ matrix.python-version }}-
             - name: Install dependencies
               run: pip install -e ".[dev]"
+            - name: Check release metadata
+              run: python scripts/check_release_metadata.py
             - name: Lint
-              run: ruff check src/
+              run: ruff check src/ scripts/
             - name: Type check
               run: mypy src/archunitpython/ --ignore-missing-imports
             - name: Test
               run: pytest --tb=short -q
+            - name: Build package
+              run: python -m build
 
     publish:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'

@@ -4,10 +4,10 @@ This backlog collects product and maintenance ideas from project research.
 
 ## P0 - Maintenance And Correctness
 
-- Keep package metadata synchronized across `pyproject.toml`, `CHANGELOG.md`, and `src/archunitpython/__init__.py`.
-- Keep tool configuration valid for the supported Python range, especially mypy and Ruff target versions.
-- Add a release metadata check that fails when the exported `__version__` differs from the project version.
-- Add CI jobs that run tests, Ruff, mypy, and a package build from a clean checkout.
+- [x] Keep package metadata synchronized across `pyproject.toml`, `CHANGELOG.md`, and `src/archunitpython/__init__.py`.
+- [x] Keep tool configuration valid for the supported Python range, especially mypy and Ruff target versions.
+- [x] Add a release metadata check that fails when the exported `__version__` differs from the project version.
+- [x] Add CI jobs that run tests, Ruff, mypy, and a package build from a clean checkout.
 
 ## P1 - Adoption Workflow
 
