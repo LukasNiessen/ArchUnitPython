@@ -89,7 +89,7 @@ def _build_cache_key(
     """Build a stable cache key for graph extraction options."""
     return (
         project_path,
-        tuple(sorted(set(exclude_patterns))),
+        tuple(sorted(exclude_patterns)),
         ignore_type_checking_imports,
     )
 
