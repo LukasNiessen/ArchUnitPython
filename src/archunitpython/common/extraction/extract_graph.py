@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import os
+from bisect import bisect_right
 
 from archunitpython.common.extraction.graph import Edge, Graph, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions
@@ -121,19 +122,14 @@ def _extract_graph_uncached(
         # Extract and resolve imports
         imports = _extract_imports(file_path)
         for module_name, import_kind in imports:
-            if (
-                ignore_type_checking_imports
-                and import_kind == ImportKind.TYPE_IMPORT
-            ):
+            if ignore_type_checking_imports and import_kind == ImportKind.TYPE_IMPORT:
                 continue
             resolved, is_external = _resolve_import(
                 module_name, file_path, project_path, import_kind
             )
             if resolved and resolved != _normalize(file_path):
                 # Check if the resolved path is in our project
-                if not is_external and resolved not in {
-                    _normalize(f) for f in py_files_set
-                }:
+                if not is_external and resolved not in {_normalize(f) for f in py_files_set}:
                     is_external = True
 
                 edges.append(
@@ -158,11 +154,7 @@ def _find_python_files(root: str, exclude: list[str]) -> list[str]:
     py_files: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root):
         # Filter out excluded directories in-place
-        dirnames[:] = [
-            d
-            for d in dirnames
-            if not _should_exclude(d, exclude)
-        ]
+        dirnames[:] = [d for d in dirnames if not _should_exclude(d, exclude)]
 
         for filename in filenames:
             if filename.endswith(".py") and not _should_exclude(filename, exclude):
@@ -242,23 +234,24 @@ def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
             if is_type_checking and node.body:
                 start = node.body[0].lineno
                 end = max(
-                    getattr(n, "end_lineno", n.lineno)
-                    for n in node.body
-                    if hasattr(n, "lineno")
+                    getattr(n, "end_lineno", n.lineno) for n in node.body if hasattr(n, "lineno")
                 )
                 ranges.append((start, end))
 
-    return ranges
+    return sorted(ranges, key=lambda ele: ele[0])
 
 
-def _in_type_checking(
-    node: ast.AST, ranges: list[tuple[int, int]]
-) -> bool:
+def _in_type_checking(node: ast.AST, ranges: list[tuple[int, int]]) -> bool:
     """Check if a node is inside a TYPE_CHECKING block."""
     if not hasattr(node, "lineno"):
         return False
     lineno = node.lineno
-    return any(start <= lineno <= end for start, end in ranges)
+
+    matched_index = bisect_right(ranges, lineno, key=lambda ele: ele[0]) - 1
+    if matched_index < 0:
+        return False
+    start, end = ranges[matched_index]
+    return start <= lineno <= end
 
 
 def _resolve_import(
