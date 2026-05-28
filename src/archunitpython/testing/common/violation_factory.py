@@ -65,9 +65,7 @@ class ViolationFactory:
             )
 
         if isinstance(violation, ViolatingCycle):
-            cycle_str = " -> ".join(
-                e.source_label for e in violation.cycle
-            )
+            cycle_str = " -> ".join(e.source_label for e in violation.cycle)
             return TestViolation(
                 message="Circular dependency detected",
                 details=f"Cycle: {cycle_str}",

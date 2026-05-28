@@ -129,9 +129,7 @@ def _extract_class(node: ast.ClassDef, file_path: str) -> ClassInfo:
     for item in ast.walk(node):
         if isinstance(item, ast.Assign):
             for target in item.targets:
-                if isinstance(target, ast.Attribute) and isinstance(
-                    target.value, ast.Name
-                ):
+                if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name):
                     if target.value.id == "self":
                         field_name = target.attr
                         if field_name not in fields:
@@ -142,9 +140,7 @@ def _extract_class(node: ast.ClassDef, file_path: str) -> ClassInfo:
         if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
             method_name = item.name
             accessed = _find_field_accesses(item, set(fields.keys()))
-            methods.append(
-                MethodInfo(name=method_name, accessed_fields=accessed)
-            )
+            methods.append(MethodInfo(name=method_name, accessed_fields=accessed))
             # Update field access tracking
             for field_name in accessed:
                 if field_name in fields:
@@ -159,9 +155,7 @@ def _extract_class(node: ast.ClassDef, file_path: str) -> ClassInfo:
     )
 
 
-def _extract_enhanced_class(
-    node: ast.ClassDef, file_path: str
-) -> EnhancedClassInfo:
+def _extract_enhanced_class(node: ast.ClassDef, file_path: str) -> EnhancedClassInfo:
     """Extract EnhancedClassInfo from a ClassDef AST node."""
     base = _extract_class(node, file_path)
 

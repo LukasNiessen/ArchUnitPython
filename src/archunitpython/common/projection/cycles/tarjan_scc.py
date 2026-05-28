@@ -18,9 +18,7 @@ class _Vertex:
 class TarjanSCC:
     """Tarjan's algorithm for finding strongly connected components."""
 
-    def find_strongly_connected_components(
-        self, edges: list[NumberEdge]
-    ) -> list[list[NumberEdge]]:
+    def find_strongly_connected_components(self, edges: list[NumberEdge]) -> list[list[NumberEdge]]:
         """Find all strongly connected components in the graph.
 
         Returns a list of edge lists, where each inner list contains
@@ -78,9 +76,7 @@ class TarjanSCC:
             if scc_vertices:
                 scc_ids = {v.id for v in scc_vertices}
                 scc_edges = [
-                    e
-                    for e in self._edges
-                    if e.from_node in scc_ids and e.to_node in scc_ids
+                    e for e in self._edges if e.from_node in scc_ids and e.to_node in scc_ids
                 ]
                 if scc_edges:
                     self._sccs.append(scc_edges)
