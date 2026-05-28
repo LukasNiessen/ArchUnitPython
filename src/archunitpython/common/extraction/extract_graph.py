@@ -247,6 +247,9 @@ def _in_type_checking(node: ast.AST, ranges: list[tuple[int, int]]) -> bool:
         return False
     lineno = node.lineno
 
+    if not isinstance(lineno,int):
+        return False
+
     matched_index = bisect_right(ranges, lineno, key=lambda ele: ele[0]) - 1
     if matched_index < 0:
         return False
