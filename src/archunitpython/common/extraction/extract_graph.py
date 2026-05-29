@@ -108,6 +108,7 @@ def _extract_graph_uncached(
 
     edges: list[Edge] = []
     py_files_set = set(py_files)
+    normalized_py_file_set = {_normalize(f) for f in py_files_set}
 
     for file_path in py_files:
         # Add self-referencing edge (ensures the file appears as a node)
@@ -129,7 +130,7 @@ def _extract_graph_uncached(
             )
             if resolved and resolved != _normalize(file_path):
                 # Check if the resolved path is in our project
-                if not is_external and resolved not in {_normalize(f) for f in py_files_set}:
+                if not is_external and resolved not in normalized_py_file_set:
                     is_external = True
 
                 edges.append(
