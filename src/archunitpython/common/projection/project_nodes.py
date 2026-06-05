@@ -27,23 +27,21 @@ def project_to_nodes(
     all_labels: set[str] = set()
 
     for edge in graph:
-        if edge.external and not include_externals:
-            # Still record the source (internal file)
-            all_labels.add(edge.source)
-            outgoing[edge.source].append(edge)
-            continue
-
         all_labels.add(edge.source)
-        all_labels.add(edge.target)
-        outgoing[edge.source].append(edge)
         if edge.source != edge.target:  # Don't count self-edges as incoming
-            incoming[edge.target].append(edge)
+            outgoing[edge.source].append(edge)
+
+        if (edge.external and include_externals) or not edge.external:
+            # Record the target (external file)
+            all_labels.add(edge.target)
+            if edge.source != edge.target:  # Don't count self-edges as incoming
+                incoming[edge.target].append(edge)
 
     return [
         ProjectedNode(
             label=label,
             incoming=incoming.get(label, []),
-            outgoing=[e for e in outgoing.get(label, []) if e.source != e.target],
+            outgoing=outgoing.get(label, []),
         )
         for label in sorted(all_labels)
     ]
