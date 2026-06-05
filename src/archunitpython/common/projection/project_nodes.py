@@ -32,7 +32,7 @@ def project_to_nodes(
             outgoing[edge.source].append(edge)
 
         if (edge.external and include_externals) or not edge.external:
-            # Record the target (external file)
+            # Record the target
             all_labels.add(edge.target)
             if edge.source != edge.target:  # Don't count self-edges as incoming
                 incoming[edge.target].append(edge)
