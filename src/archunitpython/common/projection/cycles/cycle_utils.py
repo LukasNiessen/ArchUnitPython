@@ -23,23 +23,13 @@ class CycleUtils:
     def transform_edge_data(edges: list[NumberEdge]) -> list[NumberNode]:
         """Convert a list of edges into a list of nodes with in/out edges."""
         unique_ids = CycleUtils.find_unique_nodes(edges)
-        nodes = []
-        for node_id in unique_ids:
-            incoming = []
-            outgoing = []
-            for edge in edges:
-                if edge.to_node==node_id:
-                    incoming.append(edge)
-                if edge.from_node==node_id:
-                    outgoing.append(edge)
-            nodes.append(
-                NumberNode(
-                    node=node_id,
-                    incoming=incoming,
-                    outgoing=outgoing,
-                )
-            )
-        return nodes
+        node_id_map = {node_id: NumberNode(node = node_id) for node_id in unique_ids}
+
+        for edge in edges:
+            node_id_map[edge.to_node].incoming.append(edge)
+            node_id_map[edge.from_node].outgoing.append(edge)
+
+        return list(node_id_map.values())
 
     @staticmethod
     def find_unique_nodes(edges: list[NumberEdge]) -> list[int]:
