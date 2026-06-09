@@ -100,7 +100,7 @@ def _resolve_exclude_patterns(
     project_path: str,
     exclude_patterns: list[str] | None,
 ) -> list[str]:
-    """Resolve default/explicit exclude patterns and .archignore patterns."""
+    """Resolve exclude patterns (explicit or defaults) plus any .archignore patterns."""
     excludes = list(exclude_patterns) if exclude_patterns is not None else list(_DEFAULT_EXCLUDE)
     excludes.extend(_load_archignore_patterns(project_path))
     return excludes
