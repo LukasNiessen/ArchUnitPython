@@ -7,7 +7,7 @@ from pathlib import Path
 def test_import():
     import archunitpython
 
-    assert archunitpython.__version__ == "1.1.0"
+    assert archunitpython.__version__
 
 
 def test_project_version_matches_package_version():

@@ -1,6 +1,6 @@
 # Backlog
 
-This backlog merges the existing `TODO.md` items with research findings from `docs/architecture-testing-comparison.md`.
+This backlog collects product and maintenance ideas from project research.
 
 ## P0 - Maintenance And Correctness
 
@@ -13,7 +13,6 @@ This backlog merges the existing `TODO.md` items with research findings from `do
 
 - [x] Add an `.archignore` or similar file, modeled after `.gitignore`, for files that should never be analyzed.
 - [x] Add a `.because(...)` API so rules can carry user-facing rationale into failure messages and generated architecture documentation.
-- Add a freeze/baseline mechanism for known violations so teams can adopt ArchUnitPython incrementally.
 - Add configuration-file support for common rules, while keeping the fluent Python API as the primary interface.
 - Add support for monorepo and multi-package Python projects.
 
@@ -61,22 +60,3 @@ This backlog merges the existing `TODO.md` items with research findings from `do
 - Add a Sphinx or MkDocs documentation site.
 - Add a complete example repository or examples folder covering pytest, unittest, PlantUML, metrics, and CI.
 - Add contribution guidance for new rule types and metric implementations.
-
-## Existing TODO Coverage
-
-The previous `TODO.md` items are represented above:
-
-- `.archignore`: P1 Adoption Workflow
-- Auto-generated architecture documentation: P1 Reporting And Documentation
-- `.because(...)`: P1 Adoption Workflow
-- Namespace packages: P1 Python Import Semantics
-- Dynamic imports: P1 Python Import Semantics
-- Conditional imports: P1 Python Import Semantics
-- `TYPE_CHECKING` imports: P1 Python Import Semantics
-- Clickable IDE paths: P1 Reporting And Documentation
-- Large-project performance: P2 Performance And Scale
-- HTML report with charts and zone visualization: P1 Reporting And Documentation
-- LCOM edge cases: P2 Metrics
-- Monorepo / multi-package support: P1 Adoption Workflow
-- Publish to PyPI: P3 Packaging And Docs
-- Sphinx/MkDocs documentation site: P3 Packaging And Docs

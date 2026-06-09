@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.1.0...v1.1.1) (2026-05-24)
+
+
+### Bug Fixes
+
+* **deps:** bump actions/upload-pages-artifact ([a4452fc](https://github.com/LukasNiessen/ArchUnitPython/commit/a4452fce2ce9428882cf686227de9f09cb6a21b1))
+
 # [1.1.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.0.1...v1.1.0) (2026-04-26)
 
 

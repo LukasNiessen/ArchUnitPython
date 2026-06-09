@@ -605,7 +605,12 @@ We use ourselves to ensure the architectural rules for this repository.
 
 ## 🦊 Contributing
 
-We highly appreciate contributions. We use GitHub Flow, meaning that we use feature branches. As soon as something is merged or pushed to `main` it gets deployed. Versioning is automated via [Conventional Commits](https://www.conventionalcommits.org/). See more in [Contributing](CONTRIBUTING.md).
+We highly appreciate contributions. See [Contributing](CONTRIBUTING.md) for the full workflow.
+
+- Use feature branches and open pull requests against `main`.
+- Use [Conventional Commits](https://www.conventionalcommits.org/) so releases can be versioned automatically.
+- Do not bump versions manually for normal feature or fix work; semantic-release updates `pyproject.toml`, `src/archunitpython/__init__.py`, and `CHANGELOG.md`.
+- CI checks linting, typing, tests, package builds, and release metadata sync.
 
 ## ℹ️ FAQ
 
