@@ -267,13 +267,13 @@ class FileMetricCondition:
         import os
 
         from archunitpython.common.extraction.extract_graph import (
-            _DEFAULT_EXCLUDE,
             _find_python_files,
+            _resolve_exclude_patterns,
         )
 
         project = self._project_path or os.getcwd()
         project = os.path.abspath(project)
-        files = _find_python_files(project, _DEFAULT_EXCLUDE)
+        files = _find_python_files(project, _resolve_exclude_patterns(project, None))
         violations: list[Violation] = []
 
         for file_path in files:

@@ -137,6 +137,25 @@ options = CheckOptions(
 violations = rule.check(options)
 ```
 
+### Excluding Files With `.archignore`
+
+Add a `.archignore` file to your project root to permanently exclude generated or
+irrelevant files from architecture checks and file-based metrics:
+
+```gitignore
+# Generated code
+generated/
+
+# Migration scripts
+migrations/*.py
+
+# A single root-level file
+/legacy_adapter.py
+```
+
+Patterns support comments, blank lines, glob syntax, root-relative paths, path
+patterns, and directory patterns with a trailing `/`.
+
 ## 🐹 Use Cases
 
 Here is an overview of common use cases.
