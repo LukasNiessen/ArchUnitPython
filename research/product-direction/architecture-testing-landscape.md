@@ -18,7 +18,7 @@ That breadth makes the project closer to ArchUnit-style libraries than to pure i
 
 | Tool | Ecosystem | Rule definition style | Dependency/layer rules | Cycles | Diagram support | Metrics | Reports/visualization | Notable strengths | ArchUnitPython comparison |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ArchUnit](https://www.archunit.org/userguide/html/000_Index.html) | Java | Fluent Java API, JUnit integrations | Yes: packages, classes, layers, slices | Yes | PlantUML component diagrams | Yes: software architecture metrics | Strong test failure output; mature JUnit support | Mature reference implementation; broad rule model and advanced adoption features such as freezing/ignoring violations | ArchUnitPython mirrors the core idea and already has files/slices/metrics, but lacks class/member/annotation richness and mature freeze/import options |
+| [ArchUnit](https://www.archunit.org/userguide/html/000_Index.html) | Java | Fluent Java API, JUnit integrations | Yes: packages, classes, layers, slices | Yes | PlantUML component diagrams | Yes: software architecture metrics | Strong test failure output; mature JUnit support | Mature reference implementation with a broad rule model and mature JUnit workflow | ArchUnitPython mirrors the core idea and already has files/slices/metrics, but lacks class/member/annotation richness and mature import options |
 | [ArchUnitNET](https://github.com/TNG/ArchUnitNET) | .NET | Fluent C# API with xUnit/NUnit/MSTest integrations | Yes: assemblies, namespaces, types, members | Yes | PlantUML support and diagram generation in the project ecosystem | Limited compared with ArchUnit | Test framework integrations | Strong .NET analogue to ArchUnit with many framework adapters | ArchUnitPython has stronger built-in code metrics, but less type/member-level expressiveness |
 | [NetArchTest](https://github.com/BenMorris/NetArchTest) | .NET | Fluent C# API | Yes: namespace/type dependency and conventions | Not a primary differentiator | No first-class PlantUML in core | No | Policy results; test framework agnostic | Simple, widely adopted dependency/convention tests for .NET | ArchUnitPython is broader on cycles, slices, PlantUML, and metrics |
 | [ts-arch](https://github.com/ts-arch/ts-arch) | TypeScript/JavaScript | Fluent API, Jest matcher | Yes: files, folders, slices | Yes | PlantUML diagram adherence | No | Jest-oriented failure output | Very close conceptual sibling: file API, slice API, PlantUML, NX monorepo support | ArchUnitPython has a similar surface plus metrics; ts-arch has stronger monorepo/NX positioning |
@@ -38,7 +38,7 @@ That breadth makes the project closer to ArchUnit-style libraries than to pure i
 
 - ArchUnitPython should lean into being the ArchUnit-style Python test library, not just another import linter.
 - The nearest feature gap against Python tools is not raw rule breadth; it is workflow: config files, ignore files, public interfaces, incremental adoption, reporting, and IDE/CI polish.
-- Against ArchUnit and ArchUnitNET, the biggest long-term gaps are richer semantic model support, better ignore/freeze mechanisms, and mature documentation/reporting.
+- Against ArchUnit and ArchUnitNET, the biggest long-term gaps are richer semantic model support, import semantics, and mature documentation/reporting.
 - Metrics are a meaningful differentiator in the Python space and should be kept visible in docs and examples.
 
 ## Sources

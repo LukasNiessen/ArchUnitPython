@@ -36,7 +36,7 @@ Releases are fully automated. When a PR is merged to `main`:
 1. CI runs lint + type checking + tests (across Python 3.10-3.13)
 2. If CI passes, [semantic-release](https://github.com/semantic-release/semantic-release) analyzes commit messages since the last release
 3. If there are `fix:` or `feat:` commits, it automatically:
-   - Bumps the version in `pyproject.toml`
+   - Bumps the version in `pyproject.toml` and `src/archunitpython/__init__.py`
    - Updates `CHANGELOG.md`
    - Publishes to PyPI
    - Creates a GitHub release with release notes
