@@ -1,6 +1,9 @@
 """Tests for the metrics fluent API."""
 
 import os
+import shutil
+from pathlib import Path
+from uuid import uuid4
 
 from archunitpython.metrics.assertion.metric_thresholds import (
     FileCountViolation,
@@ -56,6 +59,29 @@ class TestCountMetricsFluentAPI:
         )
         file_violations = [v for v in violations if isinstance(v, FileCountViolation)]
         assert len(file_violations) > 0
+
+
+class TestMetricsArchignore:
+    def setup_method(self):
+        self._temp_dir = Path(__file__).resolve().parent / ".tmp" / f"project_{uuid4().hex}"
+        self._temp_dir.mkdir(parents=True)
+
+    def teardown_method(self):
+        shutil.rmtree(self._temp_dir, ignore_errors=True)
+
+    def test_file_metrics_respect_archignore(self):
+        (self._temp_dir / ".archignore").write_text("ignored.py\n", encoding="utf-8")
+        (self._temp_dir / "keep.py").write_text("VALUE = 1\n", encoding="utf-8")
+        (self._temp_dir / "ignored.py").write_text(
+            "\n".join(f"VALUE_{i} = {i}" for i in range(20)),
+            encoding="utf-8",
+        )
+
+        violations = (
+            metrics(str(self._temp_dir)).count().lines_of_code().should_be_below(5).check()
+        )
+
+        assert violations == []
 
 
 class TestLCOMMetricsFluentAPI:
