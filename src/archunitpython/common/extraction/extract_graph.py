@@ -100,7 +100,7 @@ def _resolve_exclude_patterns(
     project_path: str,
     exclude_patterns: list[str] | None,
 ) -> list[str]:
-    """Resolve built-in, explicit, and .archignore exclude patterns."""
+    """Resolve default/explicit exclude patterns and .archignore patterns."""
     excludes = list(exclude_patterns) if exclude_patterns is not None else list(_DEFAULT_EXCLUDE)
     excludes.extend(_load_archignore_patterns(project_path))
     return excludes
@@ -110,9 +110,9 @@ def _load_archignore_patterns(project_path: str) -> list[str]:
     """Load .archignore patterns from a project root, if present."""
     archignore_path = os.path.join(project_path, _ARCHIGNORE_FILE)
     try:
-        with open(archignore_path, "r", encoding="utf-8") as f:
+        with open(archignore_path, "r", encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
-    except (OSError, IOError):
+    except OSError:
         return []
 
     patterns: list[str] = []

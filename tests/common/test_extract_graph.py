@@ -186,6 +186,19 @@ class TestArchignore:
         ignored_path = _normalize(str((self._temp_dir / "ignored.py").resolve()))
         assert ignored_path not in targets
 
+    def test_archignore_with_invalid_utf8_bytes_does_not_abort_extraction(self):
+        (self._temp_dir / ".archignore").write_bytes(b"ignored.py\n\xff\n")
+        self._write("keep.py")
+        self._write("ignored.py")
+
+        graph = extract_graph(str(self._temp_dir))
+        sources = {edge.source for edge in graph}
+
+        keep_path = _normalize(str((self._temp_dir / "keep.py").resolve()))
+        ignored_path = _normalize(str((self._temp_dir / "ignored.py").resolve()))
+        assert keep_path in sources
+        assert ignored_path not in sources
+
 
 class TestTypeCheckingImportHandling:
     def setup_method(self):
