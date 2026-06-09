@@ -75,6 +75,19 @@ class TestAssertPasses:
         with pytest.raises(AssertionError, match="architecture violation"):
             assert_passes(rule)
 
+    def test_failing_rule_includes_because_rationale(self):
+        rule = (
+            project_files(FIXTURES_DIR)
+            .in_folder("**/controllers*")
+            .should_not()
+            .depend_on_files()
+            .in_folder("**/services*")
+            .because("controllers should stay thin")
+        )
+
+        with pytest.raises(AssertionError, match="Because: controllers should stay thin"):
+            assert_passes(rule)
+
 
 class TestFormatViolations:
     def test_no_violations(self):
@@ -93,6 +106,18 @@ class TestFormatViolations:
         result = format_violations([violation])
         assert "1 architecture violation" in result
         assert "Circular dependency" in result
+
+    def test_with_because_rationale(self):
+        from archunitpython.common.projection.types import ProjectedEdge
+
+        violation = ViolatingCycle(
+            cycle=[
+                ProjectedEdge(source_label="a.py", target_label="b.py"),
+                ProjectedEdge(source_label="b.py", target_label="a.py"),
+            ]
+        )
+        result = format_violations([violation], because="cycles make changes risky")
+        assert "Because: cycles make changes risky" in result
 
 
 class TestSelfTesting:

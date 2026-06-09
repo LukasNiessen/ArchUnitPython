@@ -14,7 +14,7 @@ import re
 
 from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.extraction.extract_graph import extract_graph
-from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
 from archunitpython.common.projection.project_edges import project_edges
 from archunitpython.common.projection.types import MapFunction
 from archunitpython.slices.assertion.admissible_edges import (
@@ -146,7 +146,7 @@ class NegativeConditionBuilder:
         )
 
 
-class PositiveSliceCondition:
+class PositiveSliceCondition(RuleRationaleMixin):
     """Checkable that verifies slices adhere to a diagram."""
 
     def __init__(
@@ -184,7 +184,7 @@ class PositiveSliceCondition:
         return identity()
 
 
-class NegativeSliceCondition:
+class NegativeSliceCondition(RuleRationaleMixin):
     """Checkable that verifies a specific dependency does NOT exist."""
 
     def __init__(

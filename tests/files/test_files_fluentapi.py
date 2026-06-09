@@ -5,6 +5,8 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
 from archunitpython.common.assertion.violation import EmptyTestViolation
 from archunitpython.common.extraction.extract_graph import clear_graph_cache
 from archunitpython.files.assertion.custom_file_logic import CustomFileViolation
@@ -269,6 +271,23 @@ class TestMethodChaining:
         )
         cycle_violations = [v for v in violations if isinstance(v, ViolatingCycle)]
         assert len(cycle_violations) == 0
+
+    def test_because_adds_rule_rationale(self):
+        rule = (
+            project_files(FIXTURES_DIR)
+            .in_folder("**/services*")
+            .should()
+            .have_no_cycles()
+            .because("service cycles are hard to refactor")
+        )
+
+        assert rule.because_reason == "service cycles are hard to refactor"
+
+    def test_because_rejects_empty_rationale(self):
+        rule = project_files(FIXTURES_DIR).should().have_no_cycles()
+
+        with pytest.raises(ValueError, match="must not be empty"):
+            rule.because("  ")
 
 
 class TestTypeCheckingImports:
