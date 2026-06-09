@@ -11,8 +11,8 @@ This backlog collects product and maintenance ideas from project research.
 
 ## P1 - Adoption Workflow
 
-- Add an `.archignore` or similar file, modeled after `.gitignore`, for files that should never be analyzed.
-- Add a `.because(...)` API so rules can carry user-facing rationale into failure messages and generated architecture documentation.
+- [x] Add an `.archignore` or similar file, modeled after `.gitignore`, for files that should never be analyzed.
+- [x] Add a `.because(...)` API so rules can carry user-facing rationale into failure messages and generated architecture documentation.
 - Add configuration-file support for common rules, while keeping the fluent Python API as the primary interface.
 - Add support for monorepo and multi-package Python projects.
 

@@ -11,6 +11,7 @@ from archunitpython.common.extraction.extract_graph import (
     _extract_imports,
     _find_python_files,
     _normalize,
+    _resolve_exclude_patterns,
     clear_graph_cache,
     extract_graph,
 )
@@ -130,6 +131,73 @@ class TestExtractGraph:
         graph = extract_graph(SAMPLE_PROJECT)
         edges_with_kinds = [e for e in graph if len(e.import_kinds) > 0]
         assert len(edges_with_kinds) > 0
+
+
+class TestArchignore:
+    def setup_method(self):
+        clear_graph_cache()
+        self._temp_dir = Path(__file__).resolve().parent / ".tmp" / f"project_{uuid4().hex}"
+        self._temp_dir.mkdir(parents=True)
+
+    def teardown_method(self):
+        shutil.rmtree(self._temp_dir, ignore_errors=True)
+
+    def _write(self, relative_path: str, content: str = "") -> None:
+        path = self._temp_dir / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+    def test_archignore_excludes_files_and_directories(self):
+        self._write(
+            ".archignore",
+            "\n".join(
+                [
+                    "# Ignore generated architecture-test inputs",
+                    "ignored.py",
+                    "generated/",
+                    "nested/*.py",
+                    "/root_ignored.py",
+                ]
+            ),
+        )
+        self._write("keep.py")
+        self._write("ignored.py")
+        self._write("root_ignored.py")
+        self._write("generated/generated.py")
+        self._write("nested/ignored_nested.py")
+
+        excludes = _resolve_exclude_patterns(str(self._temp_dir), ["__pycache__"])
+        files = _find_python_files(str(self._temp_dir), excludes)
+        relative_files = {
+            Path(file_path).relative_to(self._temp_dir).as_posix()
+            for file_path in files
+        }
+
+        assert relative_files == {"keep.py"}
+
+    def test_archignore_ignored_files_are_not_dependency_targets(self):
+        self._write(".archignore", "ignored.py\n")
+        self._write("keep.py", "import ignored\n")
+        self._write("ignored.py", "VALUE = 1\n")
+
+        graph = extract_graph(str(self._temp_dir))
+        targets = {edge.target for edge in graph}
+
+        ignored_path = _normalize(str((self._temp_dir / "ignored.py").resolve()))
+        assert ignored_path not in targets
+
+    def test_archignore_with_invalid_utf8_bytes_does_not_abort_extraction(self):
+        (self._temp_dir / ".archignore").write_bytes(b"ignored.py\n\xff\n")
+        self._write("keep.py")
+        self._write("ignored.py")
+
+        graph = extract_graph(str(self._temp_dir))
+        sources = {edge.source for edge in graph}
+
+        keep_path = _normalize(str((self._temp_dir / "keep.py").resolve()))
+        ignored_path = _normalize(str((self._temp_dir / "ignored.py").resolve()))
+        assert keep_path in sources
+        assert ignored_path not in sources
 
 
 class TestTypeCheckingImportHandling:

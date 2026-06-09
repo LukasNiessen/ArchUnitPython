@@ -14,7 +14,7 @@ from collections.abc import Sequence
 
 from archunitpython.common.assertion.violation import EmptyTestViolation, Violation
 from archunitpython.common.extraction.extract_graph import extract_graph
-from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
 from archunitpython.common.pattern_matching import matches_all_patterns
 from archunitpython.common.projection.edge_projections import (
     per_external_edge,
@@ -338,7 +338,7 @@ def _check_empty_test(
     return None
 
 
-class CycleFreeFileCondition:
+class CycleFreeFileCondition(RuleRationaleMixin):
     """Checkable that verifies no cycles exist among filtered files."""
 
     def __init__(self, project_path: str | None, filters: list[Filter]) -> None:
@@ -366,7 +366,7 @@ class CycleFreeFileCondition:
         return gather_cycle_violations(cycles)
 
 
-class DependOnFileCondition:
+class DependOnFileCondition(RuleRationaleMixin):
     """Checkable that verifies file dependency rules."""
 
     def __init__(
@@ -393,7 +393,7 @@ class DependOnFileCondition:
         )
 
 
-class DependOnExternalModuleCondition:
+class DependOnExternalModuleCondition(RuleRationaleMixin):
     """Checkable that verifies external module dependency rules."""
 
     def __init__(
@@ -425,7 +425,7 @@ class DependOnExternalModuleCondition:
         )
 
 
-class MatchPatternFileCondition:
+class MatchPatternFileCondition(RuleRationaleMixin):
     """Checkable that verifies files match/don't match patterns."""
 
     def __init__(
@@ -452,7 +452,7 @@ class MatchPatternFileCondition:
         )
 
 
-class CustomFileCheckableCondition:
+class CustomFileCheckableCondition(RuleRationaleMixin):
     """Checkable that evaluates a custom condition on files."""
 
     def __init__(

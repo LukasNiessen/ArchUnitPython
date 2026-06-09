@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.logging.types import LoggingOptions
@@ -17,6 +17,28 @@ class CheckOptions:
     logging: LoggingOptions | None = None
     clear_cache: bool = False
     ignore_type_checking_imports: bool = False
+
+
+T = TypeVar("T", bound="RuleRationaleMixin")
+
+
+class RuleRationaleMixin:
+    """Mixin for checkable rules that can carry a human-readable rationale."""
+
+    _because_reason: str | None = None
+
+    def because(self: T, reason: str) -> T:
+        """Attach a rationale explaining why the rule exists."""
+        reason = reason.strip()
+        if not reason:
+            raise ValueError("Rule rationale must not be empty.")
+        self._because_reason = reason
+        return self
+
+    @property
+    def because_reason(self) -> str | None:
+        """Return the rationale attached with because(), if any."""
+        return self._because_reason
 
 
 class Checkable(Protocol):

@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from archunitpython.common.assertion.violation import Violation
-from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
 from archunitpython.common.pattern_matching import matches_pattern_classname
 from archunitpython.common.regex_factory import RegexFactory
 from archunitpython.common.types import Filter, Pattern
@@ -186,7 +186,7 @@ class ClassMetricThresholdBuilder:
         )
 
 
-class ClassMetricCondition:
+class ClassMetricCondition(RuleRationaleMixin):
     """Checkable that verifies a class-level metric threshold."""
 
     def __init__(
@@ -246,7 +246,7 @@ class FileMetricThresholdBuilder:
         )
 
 
-class FileMetricCondition:
+class FileMetricCondition(RuleRationaleMixin):
     """Checkable that verifies a file-level metric threshold."""
 
     def __init__(
@@ -267,13 +267,13 @@ class FileMetricCondition:
         import os
 
         from archunitpython.common.extraction.extract_graph import (
-            _DEFAULT_EXCLUDE,
             _find_python_files,
+            _resolve_exclude_patterns,
         )
 
         project = self._project_path or os.getcwd()
         project = os.path.abspath(project)
-        files = _find_python_files(project, _DEFAULT_EXCLUDE)
+        files = _find_python_files(project, _resolve_exclude_patterns(project, None))
         violations: list[Violation] = []
 
         for file_path in files:
@@ -386,7 +386,7 @@ class DistanceThresholdBuilder:
         )
 
 
-class DistanceCondition:
+class DistanceCondition(RuleRationaleMixin):
     """Checkable for distance metric thresholds."""
 
     def __init__(
@@ -426,7 +426,7 @@ class DistanceCondition:
         return violations
 
 
-class ZoneCondition:
+class ZoneCondition(RuleRationaleMixin):
     """Checkable for zone detection (pain/uselessness)."""
 
     def __init__(self, project_path: str | None, filters: list[Filter], zone_type: str) -> None:
@@ -511,7 +511,7 @@ class CustomMetricsBuilder:
         )
 
 
-class CustomMetricCondition:
+class CustomMetricCondition(RuleRationaleMixin):
     """Checkable for custom metric thresholds."""
 
     def __init__(
@@ -551,7 +551,7 @@ class CustomMetricCondition:
         return violations
 
 
-class CustomAssertionCondition:
+class CustomAssertionCondition(RuleRationaleMixin):
     """Checkable for custom metric assertions."""
 
     def __init__(

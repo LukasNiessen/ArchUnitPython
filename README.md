@@ -137,6 +137,44 @@ options = CheckOptions(
 violations = rule.check(options)
 ```
 
+### Excluding Files With `.archignore`
+
+Add a `.archignore` file to your project root to permanently exclude generated or
+irrelevant files from architecture checks and file-based metrics:
+
+```gitignore
+# Generated code
+generated/
+
+# Migration scripts
+migrations/*.py
+
+# A single root-level file
+/legacy_adapter.py
+```
+
+Patterns support comments, blank lines, glob syntax, root-relative paths, path
+patterns, and directory patterns with a trailing `/`.
+
+### Explaining Rules With `.because(...)`
+
+Attach a rationale to a rule so failing assertions explain why the rule exists:
+
+```python
+rule = (
+    project_files("src/")
+    .in_folder("**/controllers/**")
+    .should_not()
+    .depend_on_files()
+    .in_folder("**/database/**")
+    .because("controllers should stay thin and delegate persistence")
+)
+
+assert_passes(rule)
+```
+
+When the rule fails, the rationale is included in the assertion message.
+
 ## 🐹 Use Cases
 
 Here is an overview of common use cases.
