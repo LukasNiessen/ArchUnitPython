@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+from typing import Dict, Set
+
 from archunitpython.common.projection.cycles.model import NumberEdge
 
 
@@ -12,7 +15,7 @@ class _Vertex:
         self.id = node_id
         self.index = -1
         self.lowlink = -1
-        self.neighbours: list[int] = []
+        self.neighbours: Set[int] = set()
 
 
 class TarjanSCC:
@@ -27,8 +30,11 @@ class TarjanSCC:
         self._graph: dict[int, _Vertex] = {}
         self._index = 0
         self._stack: list[_Vertex] = []
+        self._on_stack: Set[int] = set()
         self._sccs: list[list[NumberEdge]] = []
-        self._edges = edges
+        self._outgoing_edge_map: Dict[int,list[NumberEdge]] = defaultdict(list)
+        for edge in edges:
+            self._outgoing_edge_map[edge.from_node].append(edge)
 
         self._init(edges)
 
@@ -47,8 +53,7 @@ class TarjanSCC:
                 self._graph[edge.to_node] = _Vertex(edge.to_node)
 
             v = self._graph[edge.from_node]
-            if edge.to_node not in v.neighbours:
-                v.neighbours.append(edge.to_node)
+            v.neighbours.add(edge.to_node)
 
     def _visit(self, vertex: _Vertex) -> None:
         """DFS visit for Tarjan's algorithm."""
@@ -56,27 +61,30 @@ class TarjanSCC:
         vertex.lowlink = self._index
         self._index += 1
         self._stack.append(vertex)
+        self._on_stack.add(vertex.id)
 
         for neighbour_id in vertex.neighbours:
             w = self._graph[neighbour_id]
             if w.index < 0:
                 self._visit(w)
                 vertex.lowlink = min(vertex.lowlink, w.lowlink)
-            elif w in self._stack:
+            elif w.id in self._on_stack:
                 vertex.lowlink = min(vertex.lowlink, w.index)
 
         if vertex.lowlink == vertex.index:
-            scc_vertices: list[_Vertex] = []
+            scc_ids: Set[int] = set()
             while True:
                 w = self._stack.pop()
-                scc_vertices.append(w)
+                self._on_stack.remove(w.id)
+                scc_ids.add(w.id)
                 if w.id == vertex.id:
                     break
 
-            if scc_vertices:
-                scc_ids = {v.id for v in scc_vertices}
-                scc_edges = [
-                    e for e in self._edges if e.from_node in scc_ids and e.to_node in scc_ids
-                ]
+            if scc_ids:
+                scc_edges: list[NumberEdge] = []
+                for id in scc_ids:
+                    for edge in self._outgoing_edge_map[id]:
+                        if edge.to_node in scc_ids:
+                            scc_edges.append(edge)
                 if scc_edges:
                     self._sccs.append(scc_edges)
