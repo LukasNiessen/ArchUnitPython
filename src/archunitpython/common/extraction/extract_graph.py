@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ast
 import os
-from bisect import bisect_right
 
 from archunitpython.common.extraction.graph import Edge, Graph, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions
@@ -247,15 +246,7 @@ def _in_type_checking(node: ast.AST, ranges: list[tuple[int, int]]) -> bool:
     if not hasattr(node, "lineno"):
         return False
     lineno = node.lineno
-
-    if not isinstance(lineno,int):
-        return False
-
-    matched_index = bisect_right(ranges, lineno, key=lambda ele: ele[0]) - 1
-    if matched_index < 0:
-        return False
-    start, end = ranges[matched_index]
-    return start <= lineno <= end
+    return any(start <= lineno <= end for start, end in ranges)
 
 
 def _resolve_import(
