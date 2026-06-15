@@ -83,11 +83,7 @@ class TestExtractGraph:
 
     def test_internal_edges_detected(self):
         graph = extract_graph(SAMPLE_PROJECT)
-        internal_non_self = [
-            e
-            for e in graph
-            if not e.external and e.source != e.target
-        ]
+        internal_non_self = [e for e in graph if not e.external and e.source != e.target]
         assert len(internal_non_self) > 0
 
     def test_external_edges_detected(self):
@@ -106,11 +102,7 @@ class TestExtractGraph:
         )
         # service_b imports from .service (relative)
         rel_edges = [
-            e
-            for e in graph
-            if e.source == service_b
-            and e.target == service
-            and not e.external
+            e for e in graph if e.source == service_b and e.target == service and not e.external
         ]
         assert len(rel_edges) == 1
 
@@ -121,9 +113,7 @@ class TestExtractGraph:
 
     def test_cache_clear(self):
         graph1 = extract_graph(SAMPLE_PROJECT)
-        graph2 = extract_graph(
-            SAMPLE_PROJECT, options=CheckOptions(clear_cache=True)
-        )
+        graph2 = extract_graph(SAMPLE_PROJECT, options=CheckOptions(clear_cache=True))
         assert graph1 is not graph2  # Different objects after cache clear
 
     def test_edge_has_import_kinds(self):
@@ -185,9 +175,7 @@ class TestTypeCheckingImportHandling:
         ).replace("\\", "/")
 
         edges = [
-            edge
-            for edge in graph
-            if edge.source == service_path and edge.target == models_path
+            edge for edge in graph if edge.source == service_path and edge.target == models_path
         ]
         assert len(edges) == 1
         assert ImportKind.TYPE_IMPORT in edges[0].import_kinds
@@ -207,9 +195,7 @@ class TestTypeCheckingImportHandling:
         ).replace("\\", "/")
 
         edges = [
-            edge
-            for edge in graph
-            if edge.source == service_path and edge.target == models_path
+            edge for edge in graph if edge.source == service_path and edge.target == models_path
         ]
         assert edges == []
 

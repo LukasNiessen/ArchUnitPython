@@ -40,6 +40,7 @@ SERVICE_FILE = os.path.join(FIXTURES_DIR, "service.py")
 
 # --- TICKET-14: Class Info Extraction ---
 
+
 class TestExtractClassInfo:
     def test_extracts_classes(self):
         classes = extract_class_info(FIXTURES_DIR)
@@ -85,6 +86,7 @@ class TestExtractClassInfo:
 
 # --- TICKET-15: Count Metrics ---
 
+
 class TestCountMetrics:
     def test_method_count(self):
         ci = ClassInfo(
@@ -124,6 +126,7 @@ class TestCountMetrics:
 
 
 # --- TICKET-16: LCOM Metrics ---
+
 
 def _make_perfect_cohesion():
     """All methods access all fields → perfect cohesion."""
@@ -219,6 +222,7 @@ class TestAllLCOMVariants:
 
 # --- TICKET-17: Distance Metrics ---
 
+
 class TestDistanceMetrics:
     def test_project_summary(self):
         results = extract_enhanced_class_info(FIXTURES_DIR)
@@ -233,6 +237,7 @@ class TestDistanceMetrics:
 
 
 # --- Threshold Checking ---
+
 
 class TestCheckThreshold:
     def test_below(self):
