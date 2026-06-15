@@ -67,6 +67,8 @@ def extract_graph(
     cache_key = _build_cache_key(
         project_path, excludes, ignore_type_checking_imports
     )
+    ignore_type_checking_imports = bool(options and options.ignore_type_checking_imports)
+    cache_key = _build_cache_key(project_path, excludes, ignore_type_checking_imports)
 
     if options and options.clear_cache:
         _graph_cache.pop(cache_key, None)
