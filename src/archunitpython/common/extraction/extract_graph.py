@@ -58,7 +58,7 @@ def extract_graph(
         project_path = os.getcwd()
 
     project_path = os.path.abspath(project_path)
-    excludes = list(exclude_patterns) if exclude_patterns is not None else list(_DEFAULT_EXCLUDE)
+    excludes = list(set(exclude_patterns)) if exclude_patterns is not None else list(_DEFAULT_EXCLUDE)
     ignore_type_checking_imports = bool(
         options and options.ignore_type_checking_imports
     )
