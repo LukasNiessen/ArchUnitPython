@@ -1,3 +1,11 @@
+## [1.1.2](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.1.1...v1.1.2) (2026-06-23)
+
+
+### Bug Fixes
+
+* fixed the duplicate key issue ([283e8e3](https://github.com/LukasNiessen/ArchUnitPython/commit/283e8e3aa959d235f331912e33a72bdbd62f3d31))
+* wrap long line in extract_graph to pass ruff E501 ([f291181](https://github.com/LukasNiessen/ArchUnitPython/commit/f291181336bacdd7a913187d2d26f1125f1b2a11))
+
 ## [1.1.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.1.0...v1.1.1) (2026-05-24)
 
 
