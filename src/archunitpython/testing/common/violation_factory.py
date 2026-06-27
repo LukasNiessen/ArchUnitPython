@@ -12,6 +12,7 @@ from archunitpython.files.assertion.depend_on_external_modules import (
 )
 from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
 from archunitpython.files.assertion.matching_files import ViolatingNode
+from archunitpython.layers.assertion.layer_dependencies import LayerDependencyViolation
 from archunitpython.metrics.assertion.metric_thresholds import (
     FileCountViolation,
     MetricViolation,
@@ -77,6 +78,15 @@ class ViolationFactory:
             return TestViolation(
                 message=violation.message,
                 details=f"File: {violation.file_info.path}",
+            )
+
+        if isinstance(violation, LayerDependencyViolation):
+            edge = violation.dependency
+            return TestViolation(
+                message="Layer dependency violation",
+                details=f"Layer '{violation.source_layer}' depends on "
+                f"disallowed layer '{violation.target_layer}' via "
+                f"'{edge.source_label}' -> '{edge.target_label}'",
             )
 
         if isinstance(violation, MetricViolation):
