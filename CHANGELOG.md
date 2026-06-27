@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.1.2...v1.2.0) (2026-06-27)
+
+
+### Features
+
+* add graph reporting and sponsorship links ([6d5eabc](https://github.com/LukasNiessen/ArchUnitPython/commit/6d5eabc1c1395c5bb4cf18e222ac472d33c02eb4))
+
 ## [1.1.2](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.1.1...v1.1.2) (2026-06-23)
 
 
