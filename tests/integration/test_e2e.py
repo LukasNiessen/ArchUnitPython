@@ -10,6 +10,8 @@ from archunitpython import (
     format_violations,
     metrics,
     project_files,
+    project_graph,
+    project_layers,
 )
 from archunitpython.files.assertion.cycle_free import ViolatingCycle
 
@@ -33,6 +35,12 @@ class TestTopLevelImports:
         from archunitpython import project_slices
 
         assert callable(project_slices)
+
+    def test_import_project_graph(self):
+        assert callable(project_graph)
+
+    def test_import_project_layers(self):
+        assert callable(project_layers)
 
     def test_import_metrics(self):
         from archunitpython import metrics

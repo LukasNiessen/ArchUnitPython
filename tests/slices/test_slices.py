@@ -1,6 +1,7 @@
 """Tests for the slices module: projections, UML parsing, assertions, fluent API."""
 
 import os
+import re
 
 from archunitpython.common.extraction.extract_graph import clear_graph_cache
 from archunitpython.common.extraction.graph import Edge
@@ -222,8 +223,6 @@ class TestSlicesFluentAPI:
         clear_graph_cache()
 
     def test_should_not_contain_dependency(self):
-        import re
-
         rule = (
             project_slices(FIXTURES_DIR)
             .defined_by_regex(re.compile(r"/([^/]+)/[^/]+\.py$"))
@@ -235,8 +234,6 @@ class TestSlicesFluentAPI:
         assert len(dep_violations) == 0
 
     def test_adhere_to_diagram_in_file(self):
-        import re
-
         puml_path = os.path.join(FIXTURES_DIR, "architecture.puml")
         rule = (
             project_slices(FIXTURES_DIR)
@@ -246,15 +243,10 @@ class TestSlicesFluentAPI:
             .adhere_to_diagram_in_file(puml_path)
         )
         violations = rule.check()
-        # Our sample project follows the architecture
         edge_violations = [v for v in violations if isinstance(v, ViolatingEdge)]
-        # Some violations may occur if services depend on controllers etc.
-        # The main assertion is that the API works end-to-end
-        assert isinstance(violations, list)
+        assert edge_violations == []
 
     def test_adhere_to_diagram_inline(self):
-        import re
-
         puml = """
 @startuml
   component [controllers]
@@ -273,4 +265,29 @@ class TestSlicesFluentAPI:
             .adhere_to_diagram(puml)
         )
         violations = rule.check()
-        assert isinstance(violations, list)
+        edge_violations = [v for v in violations if isinstance(v, ViolatingEdge)]
+        assert edge_violations == []
+
+    def test_adhere_to_diagram_inline_reports_exact_disallowed_edges(self):
+        puml = """
+@startuml
+  component [controllers]
+  component [services]
+  component [models]
+  [controllers] --> [services]
+@enduml
+"""
+        rule = (
+            project_slices(FIXTURES_DIR)
+            .defined_by_regex(re.compile(r"/([^/]+)/[^/]+\.py$"))
+            .should()
+            .ignoring_orphan_slices()
+            .adhere_to_diagram(puml)
+        )
+
+        violations = rule.check()
+        edge_violations = [v for v in violations if isinstance(v, ViolatingEdge)]
+
+        assert len(edge_violations) == 1
+        assert edge_violations[0].projected_edge.source_label == "services"
+        assert edge_violations[0].projected_edge.target_label == "models"

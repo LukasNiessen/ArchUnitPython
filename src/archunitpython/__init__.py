@@ -1,6 +1,6 @@
 """ArchUnitPython - Architecture testing library for Python projects."""
 
-__version__ = "1.1.2"
+__version__ = "1.2.0"
 
 # Files API
 # Common
@@ -13,6 +13,8 @@ from archunitpython.common import (
 )
 from archunitpython.common.extraction import clear_graph_cache, extract_graph
 from archunitpython.files import files, project_files
+from archunitpython.graph import dependency_graph, project_graph
+from archunitpython.layers import layers, project_layers
 
 # Metrics API
 from archunitpython.metrics import metrics
@@ -27,6 +29,12 @@ __all__ = [
     # Files
     "project_files",
     "files",
+    # Graph
+    "project_graph",
+    "dependency_graph",
+    # Layers
+    "project_layers",
+    "layers",
     # Slices
     "project_slices",
     # Metrics
