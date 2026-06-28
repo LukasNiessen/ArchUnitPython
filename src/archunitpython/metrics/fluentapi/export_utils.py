@@ -35,11 +35,7 @@ class MetricsExporter:
             HTML content as a string. Also writes to file if output_path specified.
         """
         opts = options or ExportOptions()
-        timestamp = (
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            if opts.include_timestamp
-            else ""
-        )
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if opts.include_timestamp else ""
 
         css = opts.custom_css or _DEFAULT_CSS
 
@@ -55,7 +51,7 @@ class MetricsExporter:
 </head>
 <body>
   <h1>{opts.title}</h1>
-  {f'<p class="timestamp">Generated: {timestamp}</p>' if timestamp else ''}
+  {f'<p class="timestamp">Generated: {timestamp}</p>' if timestamp else ""}
   <table>
     <thead>
       <tr><th>Metric</th><th>Value</th></tr>

@@ -33,12 +33,7 @@ class TestCycleFree:
         assert len(cycle_violations) == 0
 
     def test_cycle_detection_with_filter(self):
-        rule = (
-            project_files(FIXTURES_DIR)
-            .in_folder("**/services*")
-            .should()
-            .have_no_cycles()
-        )
+        rule = project_files(FIXTURES_DIR).in_folder("**/services*").should().have_no_cycles()
         violations = rule.check()
         cycle_violations = [v for v in violations if isinstance(v, ViolatingCycle)]
         assert len(cycle_violations) == 0
@@ -58,9 +53,7 @@ class TestDependOnFiles:
             .in_folder("**/utils*")
         )
         violations = rule.check()
-        dep_violations = [
-            v for v in violations if isinstance(v, ViolatingFileDependency)
-        ]
+        dep_violations = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_violations) == 0
 
     def test_should_not_depend_violation(self):
@@ -73,9 +66,7 @@ class TestDependOnFiles:
             .in_folder("**/services*")
         )
         violations = rule.check()
-        dep_violations = [
-            v for v in violations if isinstance(v, ViolatingFileDependency)
-        ]
+        dep_violations = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_violations) > 0
 
 
@@ -92,11 +83,7 @@ class TestDependOnExternalModules:
             .matching("json")
         )
         violations = rule.check()
-        dep_violations = [
-            v
-            for v in violations
-            if isinstance(v, ViolatingExternalModuleDependency)
-        ]
+        dep_violations = [v for v in violations if isinstance(v, ViolatingExternalModuleDependency)]
         assert len(dep_violations) == 1
         assert dep_violations[0].dependency.target_label == "json"
 
@@ -109,11 +96,7 @@ class TestDependOnExternalModules:
             .matching("requests")
         )
         violations = rule.check()
-        dep_violations = [
-            v
-            for v in violations
-            if isinstance(v, ViolatingExternalModuleDependency)
-        ]
+        dep_violations = [v for v in violations if isinstance(v, ViolatingExternalModuleDependency)]
         assert len(dep_violations) == 0
 
     def test_matching_multiple_external_modules_uses_or_semantics(self):
@@ -126,11 +109,7 @@ class TestDependOnExternalModules:
             .matching("typing")
         )
         violations = rule.check()
-        dep_violations = [
-            v
-            for v in violations
-            if isinstance(v, ViolatingExternalModuleDependency)
-        ]
+        dep_violations = [v for v in violations if isinstance(v, ViolatingExternalModuleDependency)]
         assert {v.dependency.target_label for v in dep_violations} == {
             "json",
             "typing",
@@ -145,11 +124,7 @@ class TestDependOnExternalModules:
             .matching("typing")
         )
         violations = rule.check()
-        dep_violations = [
-            v
-            for v in violations
-            if isinstance(v, ViolatingExternalModuleDependency)
-        ]
+        dep_violations = [v for v in violations if isinstance(v, ViolatingExternalModuleDependency)]
         assert {v.dependency.target_label for v in dep_violations} == {
             "json",
             "os",
@@ -181,9 +156,7 @@ class TestCustomCondition:
             .adhere_to(lambda f: f.lines_of_code < 1000, "File too long")
         )
         violations = rule.check()
-        custom_violations = [
-            v for v in violations if isinstance(v, CustomFileViolation)
-        ]
+        custom_violations = [v for v in violations if isinstance(v, CustomFileViolation)]
         assert len(custom_violations) == 0
 
     def test_extension_check(self):
@@ -193,9 +166,7 @@ class TestCustomCondition:
             .adhere_to(lambda f: f.extension == ".py", "Must be Python files")
         )
         violations = rule.check()
-        custom_violations = [
-            v for v in violations if isinstance(v, CustomFileViolation)
-        ]
+        custom_violations = [v for v in violations if isinstance(v, CustomFileViolation)]
         assert len(custom_violations) == 0
 
 
@@ -204,27 +175,15 @@ class TestEmptyTestDetection:
         clear_graph_cache()
 
     def test_empty_test_violation(self):
-        rule = (
-            project_files(FIXTURES_DIR)
-            .in_folder("**/nonexistent*")
-            .should()
-            .have_no_cycles()
-        )
+        rule = project_files(FIXTURES_DIR).in_folder("**/nonexistent*").should().have_no_cycles()
         violations = rule.check()
-        empty_violations = [
-            v for v in violations if isinstance(v, EmptyTestViolation)
-        ]
+        empty_violations = [v for v in violations if isinstance(v, EmptyTestViolation)]
         assert len(empty_violations) == 1
 
     def test_empty_test_allowed(self):
         from archunitpython.common.fluentapi.checkable import CheckOptions
 
-        rule = (
-            project_files(FIXTURES_DIR)
-            .in_folder("**/nonexistent*")
-            .should()
-            .have_no_cycles()
-        )
+        rule = project_files(FIXTURES_DIR).in_folder("**/nonexistent*").should().have_no_cycles()
         violations = rule.check(CheckOptions(allow_empty_tests=True))
         assert len(violations) == 0
 
@@ -235,11 +194,7 @@ class TestMethodChaining:
 
     def test_full_chain_no_cycles(self):
         violations = (
-            project_files(FIXTURES_DIR)
-            .in_folder("**/services*")
-            .should()
-            .have_no_cycles()
-            .check()
+            project_files(FIXTURES_DIR).in_folder("**/services*").should().have_no_cycles().check()
         )
         cycle_violations = [v for v in violations if isinstance(v, ViolatingCycle)]
         assert len(cycle_violations) == 0
@@ -253,9 +208,7 @@ class TestMethodChaining:
             .in_folder("**/utils*")
             .check()
         )
-        dep_violations = [
-            v for v in violations if isinstance(v, ViolatingFileDependency)
-        ]
+        dep_violations = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_violations) == 0
 
     def test_builder_with_multiple_filters(self):
@@ -330,9 +283,7 @@ class TestTypeCheckingImports:
             .in_folder("**/models*")
         )
         violations = rule.check()
-        dep_violations = [
-            v for v in violations if isinstance(v, ViolatingFileDependency)
-        ]
+        dep_violations = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_violations) == 1
 
     def test_type_checking_imports_can_be_ignored_for_rules(self):
@@ -346,10 +297,6 @@ class TestTypeCheckingImports:
             .depend_on_files()
             .in_folder("**/models*")
         )
-        violations = rule.check(
-            CheckOptions(ignore_type_checking_imports=True)
-        )
-        dep_violations = [
-            v for v in violations if isinstance(v, ViolatingFileDependency)
-        ]
+        violations = rule.check(CheckOptions(ignore_type_checking_imports=True))
+        dep_violations = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_violations) == 0

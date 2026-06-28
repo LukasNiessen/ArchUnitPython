@@ -131,6 +131,7 @@ class TestSelfTesting:
         )
         violations = rule.check()
         from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
+
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0, format_violations(dep_v)
 
@@ -147,6 +148,7 @@ class TestSelfTesting:
         )
         violations = rule.check()
         from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
+
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0, format_violations(dep_v)
 
@@ -163,6 +165,7 @@ class TestSelfTesting:
         )
         violations = rule.check()
         from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
+
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0, format_violations(dep_v)
 
@@ -185,16 +188,12 @@ class TestFullWorkflow:
         )
         violations = rule.check()
         from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
+
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0
 
     def test_metrics_on_sample(self):
-        rule = (
-            metrics(FIXTURES_DIR)
-            .count()
-            .method_count()
-            .should_be_below(100)
-        )
+        rule = metrics(FIXTURES_DIR).count().method_count().should_be_below(100)
         assert_passes(rule)
 
     def test_custom_condition(self):

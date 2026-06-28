@@ -44,9 +44,7 @@ class CheckLogger:
 
         mode = "a" if options.append_to_log_file else "w"
         self._file_handler = logging.FileHandler(str(log_path), mode=mode)
-        self._file_handler.setFormatter(
-            logging.Formatter("[%(levelname)s] %(message)s")
-        )
+        self._file_handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
         self._logger.addHandler(self._file_handler)
 
     def _log(self, level: str, options: LoggingOptions | None, message: str) -> None:

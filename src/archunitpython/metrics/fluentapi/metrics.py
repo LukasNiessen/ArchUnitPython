@@ -97,9 +97,7 @@ class MetricsBuilder:
         )
 
 
-def _get_filtered_classes(
-    project_path: str | None, filters: list[Filter]
-) -> list[ClassInfo]:
+def _get_filtered_classes(project_path: str | None, filters: list[Filter]) -> list[ClassInfo]:
     classes = extract_class_info(project_path)
     if not filters:
         return classes
@@ -119,39 +117,25 @@ class CountMetricsBuilder:
         self._filters = filters
 
     def method_count(self) -> "ClassMetricThresholdBuilder":
-        return ClassMetricThresholdBuilder(
-            self._project_path, self._filters, MethodCountMetric()
-        )
+        return ClassMetricThresholdBuilder(self._project_path, self._filters, MethodCountMetric())
 
     def field_count(self) -> "ClassMetricThresholdBuilder":
-        return ClassMetricThresholdBuilder(
-            self._project_path, self._filters, FieldCountMetric()
-        )
+        return ClassMetricThresholdBuilder(self._project_path, self._filters, FieldCountMetric())
 
     def lines_of_code(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, LinesOfCodeMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, LinesOfCodeMetric())
 
     def statements(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, StatementCountMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, StatementCountMetric())
 
     def imports(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, ImportCountMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, ImportCountMetric())
 
     def classes(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, ClassCountMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, ClassCountMetric())
 
     def functions(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, FunctionCountMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, FunctionCountMetric())
 
 
 class ClassMetricThresholdBuilder:
@@ -340,19 +324,13 @@ class DistanceMetricsBuilder:
         self._filters = filters
 
     def abstractness(self) -> "DistanceThresholdBuilder":
-        return DistanceThresholdBuilder(
-            self._project_path, self._filters, "abstractness"
-        )
+        return DistanceThresholdBuilder(self._project_path, self._filters, "abstractness")
 
     def instability(self) -> "DistanceThresholdBuilder":
-        return DistanceThresholdBuilder(
-            self._project_path, self._filters, "instability"
-        )
+        return DistanceThresholdBuilder(self._project_path, self._filters, "instability")
 
     def distance_from_main_sequence(self) -> "DistanceThresholdBuilder":
-        return DistanceThresholdBuilder(
-            self._project_path, self._filters, "distance"
-        )
+        return DistanceThresholdBuilder(self._project_path, self._filters, "distance")
 
     def not_in_zone_of_pain(self) -> "ZoneCondition":
         return ZoneCondition(self._project_path, self._filters, "pain")
@@ -440,11 +418,7 @@ class ZoneCondition:
 
         for file_result in files:
             dm = calculate_file_distance_metrics(file_result, files)
-            in_zone = (
-                dm.in_zone_of_pain
-                if self._zone_type == "pain"
-                else dm.in_zone_of_uselessness
-            )
+            in_zone = dm.in_zone_of_pain if self._zone_type == "pain" else dm.in_zone_of_uselessness
 
             if in_zone:
                 violations.append(

@@ -76,15 +76,11 @@ class FileConditionBuilder:
 
     def should(self) -> "PositiveMatchPatternFileConditionBuilder":
         """Begin positive assertion (files SHOULD ...)."""
-        return PositiveMatchPatternFileConditionBuilder(
-            self._project_path, list(self._filters)
-        )
+        return PositiveMatchPatternFileConditionBuilder(self._project_path, list(self._filters))
 
     def should_not(self) -> "NegatedMatchPatternFileConditionBuilder":
         """Begin negative assertion (files SHOULD NOT ...)."""
-        return NegatedMatchPatternFileConditionBuilder(
-            self._project_path, list(self._filters)
-        )
+        return NegatedMatchPatternFileConditionBuilder(self._project_path, list(self._filters))
 
 
 class FilesShouldCondition:
@@ -111,15 +107,11 @@ class FilesShouldCondition:
 
     def should(self) -> "PositiveMatchPatternFileConditionBuilder":
         """Begin positive assertion (files SHOULD ...)."""
-        return PositiveMatchPatternFileConditionBuilder(
-            self._project_path, list(self._filters)
-        )
+        return PositiveMatchPatternFileConditionBuilder(self._project_path, list(self._filters))
 
     def should_not(self) -> "NegatedMatchPatternFileConditionBuilder":
         """Begin negative assertion (files SHOULD NOT ...)."""
-        return NegatedMatchPatternFileConditionBuilder(
-            self._project_path, list(self._filters)
-        )
+        return NegatedMatchPatternFileConditionBuilder(self._project_path, list(self._filters))
 
 
 class PositiveMatchPatternFileConditionBuilder:
@@ -135,9 +127,7 @@ class PositiveMatchPatternFileConditionBuilder:
 
     def depend_on_files(self) -> "DependOnFileConditionBuilder":
         """Begin dependency assertion - files SHOULD depend on ..."""
-        return DependOnFileConditionBuilder(
-            self._project_path, self._filters, is_negated=False
-        )
+        return DependOnFileConditionBuilder(self._project_path, self._filters, is_negated=False)
 
     def depend_on_external_modules(
         self,
@@ -192,9 +182,7 @@ class NegatedMatchPatternFileConditionBuilder:
 
     def depend_on_files(self) -> "DependOnFileConditionBuilder":
         """Begin dependency assertion - files SHOULD NOT depend on ..."""
-        return DependOnFileConditionBuilder(
-            self._project_path, self._filters, is_negated=True
-        )
+        return DependOnFileConditionBuilder(self._project_path, self._filters, is_negated=True)
 
     def depend_on_external_modules(
         self,
@@ -243,9 +231,7 @@ class NegatedMatchPatternFileConditionBuilder:
 class DependOnFileConditionBuilder:
     """Configure dependency target patterns."""
 
-    def __init__(
-        self, project_path: str | None, filters: list[Filter], is_negated: bool
-    ) -> None:
+    def __init__(self, project_path: str | None, filters: list[Filter], is_negated: bool) -> None:
         self._project_path = project_path
         self._filters = filters
         self._is_negated = is_negated
@@ -285,9 +271,7 @@ class DependOnFileConditionBuilder:
 class DependOnExternalModuleConditionBuilder:
     """Configure external module dependency target patterns."""
 
-    def __init__(
-        self, project_path: str | None, filters: list[Filter], is_negated: bool
-    ) -> None:
+    def __init__(self, project_path: str | None, filters: list[Filter], is_negated: bool) -> None:
         self._project_path = project_path
         self._filters = filters
         self._is_negated = is_negated
@@ -447,9 +431,7 @@ class MatchPatternFileCondition:
         if empty is not None:
             return empty
 
-        return gather_regex_matching_violations(
-            nodes, self._check_filters, self._is_negated
-        )
+        return gather_regex_matching_violations(nodes, self._check_filters, self._is_negated)
 
 
 class CustomFileCheckableCondition:

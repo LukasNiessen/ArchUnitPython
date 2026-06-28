@@ -91,12 +91,8 @@ def extract_graph(
     excludes = (
         list(set(exclude_patterns)) if exclude_patterns is not None else list(_DEFAULT_EXCLUDE)
     )
-    ignore_type_checking_imports = bool(
-        options and options.ignore_type_checking_imports
-    )
-    cache_key = _build_cache_key(
-        project_path, excludes, ignore_type_checking_imports
-    )
+    ignore_type_checking_imports = bool(options and options.ignore_type_checking_imports)
+    cache_key = _build_cache_key(project_path, excludes, ignore_type_checking_imports)
 
     if options and options.clear_cache:
         _graph_cache.pop(cache_key, None)
@@ -137,6 +133,7 @@ def _extract_graph_uncached(
 
     edges: list[Edge] = []
     py_files_set = set(py_files)
+    normalized_py_file_set = {_normalize(f) for f in py_files_set}
 
     for file_path in py_files:
         # Add self-referencing edge (ensures the file appears as a node)
@@ -148,7 +145,6 @@ def _extract_graph_uncached(
             )
         )
 
-        # Extract and resolve imports
         imports = _extract_located_imports(file_path)
         for located_import in imports:
             module_name = located_import.module_name
@@ -163,9 +159,7 @@ def _extract_graph_uncached(
             )
             if resolved and resolved != _normalize(file_path):
                 # Check if the resolved path is in our project
-                if not is_external and resolved not in {
-                    _normalize(f) for f in py_files_set
-                }:
+                if not is_external and resolved not in normalized_py_file_set:
                     is_external = True
 
                 edges.append(
@@ -190,11 +184,7 @@ def _find_python_files(root: str, exclude: list[str]) -> list[str]:
     py_files: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root):
         # Filter out excluded directories in-place
-        dirnames[:] = [
-            d
-            for d in dirnames
-            if not _should_exclude(d, exclude)
-        ]
+        dirnames[:] = [d for d in dirnames if not _should_exclude(d, exclude)]
 
         for filename in filenames:
             if filename.endswith(".py") and not _should_exclude(filename, exclude):
@@ -349,18 +339,14 @@ def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
             if is_type_checking and node.body:
                 start = node.body[0].lineno
                 end = max(
-                    getattr(n, "end_lineno", n.lineno)
-                    for n in node.body
-                    if hasattr(n, "lineno")
+                    getattr(n, "end_lineno", n.lineno) for n in node.body if hasattr(n, "lineno")
                 )
                 ranges.append((start, end))
 
-    return ranges
+    return sorted(ranges, key=lambda ele: ele[0])
 
 
-def _in_type_checking(
-    node: ast.AST, ranges: list[tuple[int, int]]
-) -> bool:
+def _in_type_checking(node: ast.AST, ranges: list[tuple[int, int]]) -> bool:
     """Check if a node is inside a TYPE_CHECKING block."""
     if not hasattr(node, "lineno"):
         return False

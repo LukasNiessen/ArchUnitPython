@@ -29,6 +29,7 @@ FIXTURES_DIR = os.path.join(
 
 # --- TICKET-10: Slicing Projections ---
 
+
 class TestSliceByPattern:
     def test_basic_pattern(self):
         mapper = slice_by_pattern("src/(**)/**")
@@ -60,6 +61,7 @@ class TestSliceByPattern:
 class TestSliceByRegex:
     def test_regex_capture(self):
         import re
+
         mapper = slice_by_regex(re.compile(r"src/([^/]+)/"))
         edge = Edge(source="src/controllers/ctrl.py", target="src/services/svc.py", external=False)
         result = mapper(edge)
@@ -101,6 +103,7 @@ class TestIdentity:
 
 
 # --- TICKET-11: PlantUML Parsing ---
+
 
 class TestGenerateRule:
     def test_basic_diagram(self):
@@ -171,6 +174,7 @@ class TestExportDiagram:
 
 # --- TICKET-12: Slice Assertions ---
 
+
 class TestGatherViolations:
     def test_forbidden_dependency_found(self):
         edges = [ProjectedEdge(source_label="ui", target_label="db")]
@@ -203,13 +207,16 @@ class TestGatherPositiveViolations:
         edges = [ProjectedEdge(source_label="unknown", target_label="db")]
         rules = []
         violations = gather_positive_violations(
-            edges, rules, ["db"],
+            edges,
+            rules,
+            ["db"],
             CoherenceOptions(ignore_orphan_slices=True),
         )
         assert len(violations) == 0
 
 
 # --- TICKET-13: Slices Fluent API ---
+
 
 class TestSlicesFluentAPI:
     def setup_method(self):

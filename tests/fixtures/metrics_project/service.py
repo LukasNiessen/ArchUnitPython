@@ -19,8 +19,7 @@ class BaseService(ABC):
         self.logger = None
 
     @abstractmethod
-    def process(self):
-        ...
+    def process(self): ...
 
     def get_cache(self):
         return self.cache
