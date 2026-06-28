@@ -1,3 +1,21 @@
+## [1.2.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.2.0...v1.2.1) (2026-06-28)
+
+
+### Bug Fixes
+
+* **extract_graph:** validate AST line number before range lookup ([84c9ef4](https://github.com/LukasNiessen/ArchUnitPython/commit/84c9ef4a97333ed1fa302778725ab6d5ba891574))
+
+
+### Performance Improvements
+
+* **extract_graph:** optimize file path normalization ([14b4a95](https://github.com/LukasNiessen/ArchUnitPython/commit/14b4a955576d4ee2464c8c2cceb71f28b9135198))
+* **extract_graph:** replace linear search in `_in_type_checking()` with binary search ([1285b5e](https://github.com/LukasNiessen/ArchUnitPython/commit/1285b5e5ac513d7897d42b5e6c1fcb0bd83c1835))
+
+
+### Reverts
+
+* Reverted the binary search implementation in `_in_type_checking()` function. ([d06a455](https://github.com/LukasNiessen/ArchUnitPython/commit/d06a45569fdfe5eab5e6825f6046c773b66d61c7))
+
 # [1.2.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.1.2...v1.2.0) (2026-06-27)
 
 
