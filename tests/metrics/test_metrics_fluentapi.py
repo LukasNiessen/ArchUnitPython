@@ -83,7 +83,51 @@ class TestDistanceMetricsFluentAPI:
             .should_be_below(1.0)
             .check()
         )
-        assert isinstance(violations, list)
+        assert violations == []
+
+    def test_abstractness_violation_reports_exact_metric(self):
+        violations = (
+            metrics(FIXTURES_DIR)
+            .distance()
+            .abstractness()
+            .should_be_below(0.5)
+            .check()
+        )
+        metric_violations = [v for v in violations if isinstance(v, MetricViolation)]
+
+        assert len(metric_violations) == 1
+        assert metric_violations[0].file_path.endswith("service.py")
+        assert metric_violations[0].metric_name == "abstractness"
+        assert metric_violations[0].metric_value == 0.5
+        assert metric_violations[0].threshold == 0.5
+        assert metric_violations[0].comparison == "below"
+
+    def test_instability_violation_reports_exact_metric(self):
+        violations = (
+            metrics(FIXTURES_DIR)
+            .distance()
+            .instability()
+            .should_be_above(0.6)
+            .check()
+        )
+        metric_violations = [v for v in violations if isinstance(v, MetricViolation)]
+
+        assert len(metric_violations) == 1
+        assert metric_violations[0].file_path.endswith("service.py")
+        assert metric_violations[0].metric_name == "instability"
+        assert metric_violations[0].metric_value == 0.5
+        assert metric_violations[0].threshold == 0.6
+        assert metric_violations[0].comparison == "above"
+
+    def test_distance_from_main_sequence_uses_exact_fixture_value(self):
+        violations = (
+            metrics(FIXTURES_DIR)
+            .distance()
+            .distance_from_main_sequence()
+            .should_be_below(0.1)
+            .check()
+        )
+        assert violations == []
 
     def test_not_in_zone_of_uselessness(self):
         violations = (
@@ -92,7 +136,7 @@ class TestDistanceMetricsFluentAPI:
             .not_in_zone_of_uselessness()
             .check()
         )
-        assert isinstance(violations, list)
+        assert violations == []
 
 
 class TestCustomMetrics:
