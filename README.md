@@ -398,21 +398,113 @@ def test_no_forbidden_dependency():
 
 Generate dependency graph reports in multiple formats and narrow them to the part of the codebase you want to inspect.
 
+**Using `requests` library repo for example**
+
 ```python
 from archunitpython import project_graph
 
 def test_export_dependency_graph_reports():
-    graph = project_graph("src/").titled("Application Architecture")
+    graph = project_graph("src/requests").titled("Application Architecture")
 
-    graph.collapse_to_folder_depth(2).export_as_mermaid(
-        "reports/dependencies.mmd"
-    )
+    graph.collapse_to_folder_depth(2).export_as_mermaid("reports/dependencies.md")
 
-    graph.focus_on("**/domain/**", 1).export_as_html(
-        "reports/domain-dependencies.html"
-    )
-
-    assert graph.snapshot().summary.node_count >= 0
+if __name__ == "__main__":
+    test_export_dependency_graph_reports()
+```
+**Rendered mermain diagram**
+``` mermaid
+flowchart LR
+  n0["__init__.py"]
+  n1["__version__.py"]
+  n2["_internal_utils.py"]
+  n3["_types.py"]
+  n4["adapters.py"]
+  n5["api.py"]
+  n6["auth.py"]
+  n7["certs.py"]
+  n8["compat.py"]
+  n9["cookies.py"]
+  n10["exceptions.py"]
+  n11["help.py"]
+  n12["hooks.py"]
+  n13["models.py"]
+  n14["packages.py"]
+  n15["sessions.py"]
+  n16["status_codes.py"]
+  n17["structures.py"]
+  n18["utils.py"]
+  n0 --> n1
+  n0 --> n5
+  n0 --> n10
+  n0 --> n13
+  n0 --> n15
+  n0 --> n16
+  n2 --> n8
+  n3 --> n6
+  n3 --> n9
+  n3 --> n13
+  n3 --> n17
+  n4 --> n0
+  n4 --> n3
+  n4 --> n6
+  n4 --> n8
+  n4 --> n9
+  n4 --> n10
+  n4 --> n13
+  n4 --> n17
+  n4 --> n18
+  n5 --> n0
+  n5 --> n13
+  n6 --> n2
+  n6 --> n8
+  n6 --> n9
+  n6 --> n13
+  n6 --> n18
+  n9 --> n2
+  n9 --> n3
+  n9 --> n8
+  n9 --> n13
+  n10 --> n8
+  n10 --> n13
+  n11 --> n0
+  n12 --> n0
+  n12 --> n13
+  n13 --> n0
+  n13 --> n2
+  n13 --> n4
+  n13 --> n6
+  n13 --> n8
+  n13 --> n9
+  n13 --> n10
+  n13 --> n12
+  n13 --> n16
+  n13 --> n17
+  n13 --> n18
+  n14 --> n8
+  n15 --> n0
+  n15 --> n2
+  n15 --> n3
+  n15 --> n4
+  n15 --> n6
+  n15 --> n8
+  n15 --> n9
+  n15 --> n10
+  n15 --> n12
+  n15 --> n13
+  n15 --> n16
+  n15 --> n17
+  n15 --> n18
+  n16 --> n17
+  n17 --> n8
+  n18 --> n0
+  n18 --> n1
+  n18 --> n2
+  n18 --> n3
+  n18 --> n8
+  n18 --> n9
+  n18 --> n10
+  n18 --> n13
+  n18 --> n17
 ```
 
 Supported formats:
