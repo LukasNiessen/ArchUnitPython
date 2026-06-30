@@ -398,7 +398,7 @@ def test_no_forbidden_dependency():
 
 Generate dependency graph reports in multiple formats and narrow them to the part of the codebase you want to inspect.
 
-**Using `requests` library repo for example**
+**Using [`requests`](https://github.com/psf/requests) library repo for example**
 
 ```python
 from archunitpython import project_graph
