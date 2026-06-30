@@ -411,7 +411,7 @@ def test_export_dependency_graph_reports():
 if __name__ == "__main__":
     test_export_dependency_graph_reports()
 ```
-**Rendered mermain diagram**
+**Exported mermaid diagram**
 ``` mermaid
 flowchart LR
   n0["__init__.py"]
