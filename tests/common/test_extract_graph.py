@@ -310,6 +310,67 @@ class TestDynamicImportGraphHandling:
         assert ImportKind.DYNAMIC_IMPORT in edges[0].import_kinds
 
 
+class TestNamespacePackageGraphHandling:
+    def setup_method(self):
+        clear_graph_cache()
+
+    def _build_namespace_project(self, service_source: str) -> str:
+        temp_root = Path(__file__).resolve().parent / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        project_root = temp_root / f"project_{uuid4().hex}"
+
+        domain_dir = project_root / "namespace_pkg" / "domain"
+        services_dir = project_root / "namespace_pkg" / "services"
+        domain_dir.mkdir(parents=True)
+        services_dir.mkdir(parents=True)
+
+        (domain_dir / "model.py").write_text(
+            "class User:\n    pass\n",
+            encoding="utf-8",
+        )
+        (services_dir / "service.py").write_text(service_source, encoding="utf-8")
+
+        self._temp_dir = project_root
+        return str(project_root)
+
+    def teardown_method(self):
+        temp_dir = getattr(self, "_temp_dir", None)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _service_to_model_edges(self, project_root: str) -> list[Edge]:
+        graph = extract_graph(project_root)
+        model_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "domain", "model.py")
+        ).replace("\\", "/")
+        service_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "services", "service.py")
+        ).replace("\\", "/")
+        return [
+            edge for edge in graph if edge.source == service_path and edge.target == model_path
+        ]
+
+    def test_absolute_from_import_resolves_namespace_package_submodule(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model\n"
+        )
+
+        edges = self._service_to_model_edges(project_root)
+
+        assert len(edges) == 1
+        assert edges[0].external is False
+        assert ImportKind.FROM_IMPORT in edges[0].import_kinds
+
+    def test_relative_from_import_resolves_namespace_package_submodule(self):
+        project_root = self._build_namespace_project("from ..domain import model\n")
+
+        edges = self._service_to_model_edges(project_root)
+
+        assert len(edges) == 1
+        assert edges[0].external is False
+        assert ImportKind.RELATIVE_IMPORT in edges[0].import_kinds
+
+
 class TestIgnoreDirectives:
     def setup_method(self):
         clear_graph_cache()
