@@ -2,12 +2,10 @@
 
 import os
 
-from archunitpython.common.extraction.graph import Edge
 from archunitpython.common.projection.types import ProjectedEdge, ProjectedNode
 from archunitpython.common.regex_factory import RegexFactory
 from archunitpython.files.assertion.custom_file_logic import (
     CustomFileViolation,
-    FileInfo,
     _build_file_info,
     gather_custom_file_violations,
 )

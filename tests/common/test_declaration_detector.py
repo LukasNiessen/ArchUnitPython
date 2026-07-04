@@ -1,13 +1,13 @@
 """Tests for declaration detection utilities."""
 
+import ast
+
 from archunitpython.common.util.declaration_detector import (
-    DeclarationCounts,
     count_declarations,
     is_abstract_class,
     is_abstract_method,
     is_protocol_class,
 )
-import ast
 
 
 class TestIsAbstractClass:
