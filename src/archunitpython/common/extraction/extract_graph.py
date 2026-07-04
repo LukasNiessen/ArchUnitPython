@@ -231,30 +231,48 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
     imports: list[_LocatedImport] = []
     ignore_directives = _find_ignore_directives(source)
     type_checking_ranges = _find_type_checking_ranges(tree)
+    conditional_import_ranges = _find_conditional_import_ranges(tree)
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
-            is_type = _in_type_checking(node, type_checking_ranges)
-            kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.IMPORT
+            kind = _classify_import(
+                node,
+                ImportKind.IMPORT,
+                type_checking_ranges,
+                conditional_import_ranges,
+            )
             for alias in node.names:
                 imports.append(_LocatedImport(alias.name, kind, node.lineno))
 
         elif isinstance(node, ast.ImportFrom):
-            is_type = _in_type_checking(node, type_checking_ranges)
             if node.level and node.level > 0:
                 # Relative import
-                kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.RELATIVE_IMPORT
+                kind = _classify_import(
+                    node,
+                    ImportKind.RELATIVE_IMPORT,
+                    type_checking_ranges,
+                    conditional_import_ranges,
+                )
                 module = node.module or ""
                 dots = "." * node.level
                 imports.append(_LocatedImport(f"{dots}{module}", kind, node.lineno))
             else:
-                kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.FROM_IMPORT
+                kind = _classify_import(
+                    node,
+                    ImportKind.FROM_IMPORT,
+                    type_checking_ranges,
+                    conditional_import_ranges,
+                )
                 if node.module:
                     imports.append(_LocatedImport(node.module, kind, node.lineno))
 
         elif isinstance(node, ast.Call):
-            is_type = _in_type_checking(node, type_checking_ranges)
-            kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.DYNAMIC_IMPORT
+            kind = _classify_import(
+                node,
+                ImportKind.DYNAMIC_IMPORT,
+                type_checking_ranges,
+                conditional_import_ranges,
+            )
             for module_name in _extract_dynamic_import_names(node):
                 imports.append(_LocatedImport(module_name, kind, node.lineno))
 
@@ -321,6 +339,20 @@ def _extract_dynamic_import_names(node: ast.Call) -> list[str]:
     return []
 
 
+def _classify_import(
+    node: ast.AST,
+    default_kind: ImportKind,
+    type_checking_ranges: list[tuple[int, int]],
+    conditional_import_ranges: list[tuple[int, int]],
+) -> ImportKind:
+    """Classify an import node by special context before syntax kind."""
+    if _in_type_checking(node, type_checking_ranges):
+        return ImportKind.TYPE_IMPORT
+    if _in_conditional_import(node, conditional_import_ranges):
+        return ImportKind.CONDITIONAL_IMPORT
+    return default_kind
+
+
 def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
     """Find line ranges of TYPE_CHECKING blocks."""
     ranges: list[tuple[int, int]] = []
@@ -346,8 +378,56 @@ def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
     return sorted(ranges, key=lambda ele: ele[0])
 
 
+def _find_conditional_import_ranges(tree: ast.Module) -> list[tuple[int, int]]:
+    """Find try/except ImportError ranges that contain optional imports."""
+    ranges: list[tuple[int, int]] = []
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Try):
+            continue
+        if not any(_handles_import_error(handler.type) for handler in node.handlers):
+            continue
+
+        ranges.extend(_statement_ranges(node.body))
+        for handler in node.handlers:
+            if _handles_import_error(handler.type):
+                ranges.extend(_statement_ranges(handler.body))
+
+    return sorted(ranges, key=lambda ele: ele[0])
+
+
+def _handles_import_error(node: ast.expr | None) -> bool:
+    """Return True if an except handler catches import-related errors."""
+    if node is None:
+        return False
+    if isinstance(node, ast.Name):
+        return node.id in {"ImportError", "ModuleNotFoundError"}
+    if isinstance(node, ast.Attribute):
+        return node.attr in {"ImportError", "ModuleNotFoundError"}
+    if isinstance(node, ast.Tuple):
+        return any(_handles_import_error(elt) for elt in node.elts)
+    return False
+
+
+def _statement_ranges(statements: list[ast.stmt]) -> list[tuple[int, int]]:
+    """Return line ranges covered by statement blocks."""
+    if not statements:
+        return []
+    start = statements[0].lineno
+    end = max(getattr(statement, "end_lineno", statement.lineno) for statement in statements)
+    return [(start, end)]
+
+
 def _in_type_checking(node: ast.AST, ranges: list[tuple[int, int]]) -> bool:
     """Check if a node is inside a TYPE_CHECKING block."""
+    if not hasattr(node, "lineno"):
+        return False
+    lineno = node.lineno
+    return any(start <= lineno <= end for start, end in ranges)
+
+
+def _in_conditional_import(node: ast.AST, ranges: list[tuple[int, int]]) -> bool:
+    """Check if a node is inside a try/except ImportError block."""
     if not hasattr(node, "lineno"):
         return False
     lineno = node.lineno
@@ -365,7 +445,15 @@ def _resolve_import(
     Returns (resolved_path, is_external).
     The path is normalized with forward slashes.
     """
-    if kind in (ImportKind.RELATIVE_IMPORT, ImportKind.TYPE_IMPORT) and import_name.startswith("."):
+    if (
+        kind
+        in (
+            ImportKind.RELATIVE_IMPORT,
+            ImportKind.TYPE_IMPORT,
+            ImportKind.CONDITIONAL_IMPORT,
+        )
+        and import_name.startswith(".")
+    ):
         # Relative import
         return _resolve_relative_import(import_name, source_file, project_root)
 

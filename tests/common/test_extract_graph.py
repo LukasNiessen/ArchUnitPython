@@ -105,6 +105,32 @@ class TestExtractImports:
         finally:
             shutil.rmtree(project_root, ignore_errors=True)
 
+    def test_conditional_import(self):
+        temp_root = Path(__file__).resolve().parent / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        project_root = temp_root / f"project_{uuid4().hex}"
+        project_root.mkdir()
+        file_path = project_root / "loader.py"
+        file_path.write_text(
+            "\n".join(
+                [
+                    "try:",
+                    "    import orjson",
+                    "except ImportError:",
+                    "    import json",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+        try:
+            imports = _extract_imports(str(file_path))
+            assert ("orjson", ImportKind.CONDITIONAL_IMPORT) in imports
+            assert ("json", ImportKind.CONDITIONAL_IMPORT) in imports
+        finally:
+            shutil.rmtree(project_root, ignore_errors=True)
+
 
 class TestExtractGraph:
     def setup_method(self):
@@ -310,6 +336,75 @@ class TestDynamicImportGraphHandling:
         assert ImportKind.DYNAMIC_IMPORT in edges[0].import_kinds
 
 
+class TestConditionalImportGraphHandling:
+    def setup_method(self):
+        clear_graph_cache()
+
+    def _build_conditional_project(self) -> str:
+        temp_root = Path(__file__).resolve().parent / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        project_root = temp_root / f"project_{uuid4().hex}"
+        project_root.mkdir()
+
+        package_dir = project_root / "sample_project"
+        package_dir.mkdir(parents=True, exist_ok=True)
+
+        (package_dir / "__init__.py").write_text("", encoding="utf-8")
+        (package_dir / "fast_model.py").write_text(
+            "class FastUser:\n    pass\n",
+            encoding="utf-8",
+        )
+        (package_dir / "fallback_model.py").write_text(
+            "class FallbackUser:\n    pass\n",
+            encoding="utf-8",
+        )
+        (package_dir / "service.py").write_text(
+            "\n".join(
+                [
+                    "try:",
+                    "    from sample_project.fast_model import FastUser",
+                    "except ImportError:",
+                    "    from sample_project.fallback_model import FallbackUser",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        self._temp_dir = project_root
+        return str(project_root)
+
+    def teardown_method(self):
+        temp_dir = getattr(self, "_temp_dir", None)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_import_error_fallback_imports_are_marked_conditional(self):
+        project_root = self._build_conditional_project()
+
+        graph = extract_graph(project_root)
+        service_path = os.path.abspath(
+            os.path.join(project_root, "sample_project", "service.py")
+        ).replace("\\", "/")
+        target_paths = {
+            os.path.abspath(
+                os.path.join(project_root, "sample_project", "fast_model.py")
+            ).replace("\\", "/"),
+            os.path.abspath(
+                os.path.join(project_root, "sample_project", "fallback_model.py")
+            ).replace("\\", "/"),
+        }
+
+        edges = [
+            edge
+            for edge in graph
+            if edge.source == service_path and edge.target in target_paths
+        ]
+
+        assert len(edges) == 2
+        assert all(edge.external is False for edge in edges)
+        assert all(ImportKind.CONDITIONAL_IMPORT in edge.import_kinds for edge in edges)
+
+
 class TestIgnoreDirectives:
     def setup_method(self):
         clear_graph_cache()
@@ -401,3 +496,4 @@ class TestImportKind:
         assert ImportKind.RELATIVE_IMPORT.value == "relative"
         assert ImportKind.DYNAMIC_IMPORT.value == "dynamic"
         assert ImportKind.TYPE_IMPORT.value == "type"
+        assert ImportKind.CONDITIONAL_IMPORT.value == "conditional"
