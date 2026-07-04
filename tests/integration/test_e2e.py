@@ -42,6 +42,11 @@ class TestTopLevelImports:
     def test_import_project_layers(self):
         assert callable(project_layers)
 
+    def test_import_rules_from_config(self):
+        from archunitpython import rules_from_config
+
+        assert callable(rules_from_config)
+
     def test_import_metrics(self):
         from archunitpython import metrics
 

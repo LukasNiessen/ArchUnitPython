@@ -12,6 +12,7 @@ from archunitpython.common import (
     Violation,
 )
 from archunitpython.common.extraction import clear_graph_cache, extract_graph
+from archunitpython.config import ConfiguredRule, rules_from_config
 from archunitpython.files import files, project_files
 from archunitpython.graph import dependency_graph, project_graph
 from archunitpython.layers import layers, project_layers
@@ -35,6 +36,9 @@ __all__ = [
     # Layers
     "project_layers",
     "layers",
+    # Config
+    "rules_from_config",
+    "ConfiguredRule",
     # Slices
     "project_slices",
     # Metrics
