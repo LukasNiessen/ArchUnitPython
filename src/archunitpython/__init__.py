@@ -1,6 +1,6 @@
 """ArchUnitPython - Architecture testing library for Python projects."""
 
-__version__ = "1.2.1"
+__version__ = "1.3.0"
 
 # Files API
 # Common
