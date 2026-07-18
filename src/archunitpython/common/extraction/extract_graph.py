@@ -43,6 +43,7 @@ class _LocatedImport:
     module_name: str
     import_kind: ImportKind
     line_number: int
+    resolution_kind: ImportKind | None = None
 
 
 @dataclass(frozen=True)
@@ -182,8 +183,9 @@ def _extract_graph_uncached(
                 and import_kind == ImportKind.TYPE_IMPORT
             ):
                 continue
+            resolution_kind = located_import.resolution_kind or import_kind
             resolved, is_external = _resolve_import(
-                module_name, file_path, project_path, import_kind
+                module_name, file_path, project_path, resolution_kind
             )
             if resolved and resolved != _normalize(file_path):
                 # Check if the resolved path is in our project
@@ -195,7 +197,7 @@ def _extract_graph_uncached(
                         source=_normalize(file_path),
                         target=resolved,
                         external=is_external,
-                        import_kinds=(import_kind,),
+                        import_kinds=_edge_import_kinds(located_import),
                     )
                 )
 
@@ -303,46 +305,52 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
+            syntax_kind = ImportKind.IMPORT
             kind = _classify_import(
                 node,
-                ImportKind.IMPORT,
+                syntax_kind,
                 type_checking_ranges,
                 conditional_import_ranges,
             )
             for alias in node.names:
-                imports.append(_LocatedImport(alias.name, kind, node.lineno))
+                imports.append(
+                    _LocatedImport(alias.name, kind, node.lineno, syntax_kind)
+                )
 
         elif isinstance(node, ast.ImportFrom):
-            if node.level and node.level > 0:
-                # Relative import
-                kind = _classify_import(
-                    node,
-                    ImportKind.RELATIVE_IMPORT,
-                    type_checking_ranges,
-                    conditional_import_ranges,
-                )
-                module = node.module or ""
-                dots = "." * node.level
-                imports.append(_LocatedImport(f"{dots}{module}", kind, node.lineno))
-            else:
-                kind = _classify_import(
-                    node,
-                    ImportKind.FROM_IMPORT,
-                    type_checking_ranges,
-                    conditional_import_ranges,
-                )
-                if node.module:
-                    imports.append(_LocatedImport(node.module, kind, node.lineno))
-
-        elif isinstance(node, ast.Call):
+            syntax_kind = (
+                ImportKind.RELATIVE_IMPORT
+                if node.level and node.level > 0
+                else ImportKind.FROM_IMPORT
+            )
             kind = _classify_import(
                 node,
-                ImportKind.DYNAMIC_IMPORT,
+                syntax_kind,
+                type_checking_ranges,
+                conditional_import_ranges,
+            )
+            for module_name in _import_from_module_names(node):
+                imports.append(
+                    _LocatedImport(
+                        module_name,
+                        kind,
+                        node.lineno,
+                        syntax_kind,
+                    )
+                )
+
+        elif isinstance(node, ast.Call):
+            syntax_kind = ImportKind.DYNAMIC_IMPORT
+            kind = _classify_import(
+                node,
+                syntax_kind,
                 type_checking_ranges,
                 conditional_import_ranges,
             )
             for module_name in _extract_dynamic_import_names(node):
-                imports.append(_LocatedImport(module_name, kind, node.lineno))
+                imports.append(
+                    _LocatedImport(module_name, kind, node.lineno, syntax_kind)
+                )
 
     return [
         import_
@@ -405,6 +413,29 @@ def _extract_dynamic_import_names(node: ast.Call) -> list[str]:
         return [first_arg.value]
 
     return []
+
+
+def _import_from_module_names(node: ast.ImportFrom) -> tuple[str, ...]:
+    """Return resolvable module names for a from-import statement."""
+    dots = "." * (node.level or 0)
+    if node.module:
+        return (f"{dots}{node.module}",)
+
+    aliases = tuple(alias.name for alias in node.names if alias.name != "*")
+    if dots and aliases:
+        return tuple(f"{dots}{alias}" for alias in aliases)
+    return (dots,) if dots else ()
+
+
+def _edge_import_kinds(import_: _LocatedImport) -> tuple[ImportKind, ...]:
+    """Return graph labels without losing syntax for conditional imports."""
+    resolution_kind = import_.resolution_kind or import_.import_kind
+    if (
+        import_.import_kind == ImportKind.CONDITIONAL_IMPORT
+        and resolution_kind != import_.import_kind
+    ):
+        return (resolution_kind, import_.import_kind)
+    return (import_.import_kind,)
 
 
 def _classify_import(

@@ -350,7 +350,9 @@ from my_app.adapters.sql import Repository  # archunit: ignore
 Imports inside `try` blocks that handle `ImportError` or
 `ModuleNotFoundError` are marked as conditional dependencies. This helps graph
 reports distinguish optional imports and fallback implementations from regular
-runtime imports.
+runtime imports. Conditional dependencies remain part of architecture checks;
+relative and dynamic imports also retain their original import kind in graph
+reports.
 
 ### Naming Conventions
 

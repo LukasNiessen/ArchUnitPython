@@ -20,7 +20,7 @@ This backlog collects product and maintenance ideas from project research.
 
 - Add support for namespace packages that do not contain `__init__.py`.
 - Detect dynamic imports such as `importlib.import_module()` and `__import__()`.
-- Detect conditional imports such as `try/except ImportError`.
+- [x] Detect conditional imports such as `try/except ImportError`.
 - Add better `TYPE_CHECKING` import handling, including options to ignore, include, or report type-only imports separately.
 - Improve external dependency rules so users can express allowed and forbidden third-party packages at module or slice level.
 - Consider a public-interface rule inspired by Tach, where modules may only import through declared package APIs.
