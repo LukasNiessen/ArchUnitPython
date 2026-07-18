@@ -1,3 +1,16 @@
+# [1.4.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.3.0...v1.4.0) (2026-07-18)
+
+
+### Bug Fixes
+
+* clarify metadata and exclude messages ([999bb68](https://github.com/LukasNiessen/ArchUnitPython/commit/999bb689594ff613b5f4445191509bcdaa9a514f))
+* harden archignore loading ([ae88c93](https://github.com/LukasNiessen/ArchUnitPython/commit/ae88c932ae2838cff0eabab687ac948f4920c3eb))
+
+
+### Features
+
+* support archignore exclusions ([c51c401](https://github.com/LukasNiessen/ArchUnitPython/commit/c51c40148425b08ce0257d75dd95c996d0505b00))
+
 # [1.3.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.2.1...v1.3.0) (2026-07-05)
 
 
