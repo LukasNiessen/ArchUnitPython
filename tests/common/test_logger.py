@@ -1,9 +1,5 @@
 """Tests for the logging system."""
 
-import os
-import shutil
-from pathlib import Path
-
 from archunitpython.common.logging.types import LoggingOptions
 from archunitpython.common.util.logger import CheckLogger
 
