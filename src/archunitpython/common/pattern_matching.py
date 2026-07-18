@@ -50,9 +50,7 @@ def matches_pattern(file_path: str, filter_: Filter) -> bool:
     return bool(filter_.regexp.search(target_string))
 
 
-def matches_pattern_classname(
-    class_name: str, file_path: str, filter_: Filter
-) -> bool:
+def matches_pattern_classname(class_name: str, file_path: str, filter_: Filter) -> bool:
     """Check if a class/file matches a filter, supporting classname target."""
     target = filter_.options.target
 

@@ -72,8 +72,7 @@ class _CycleProcessor:
                     (
                         se
                         for se in self._source_edges
-                        if se.source_label == source_label
-                        and se.target_label == target_label
+                        if se.source_label == source_label and se.target_label == target_label
                     ),
                     None,
                 )

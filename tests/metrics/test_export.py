@@ -15,9 +15,7 @@ class TestMetricsExporter:
 
     def test_custom_title(self):
         data = {"Metric": "Value"}
-        html = MetricsExporter.export_as_html(
-            data, ExportOptions(title="My Report")
-        )
+        html = MetricsExporter.export_as_html(data, ExportOptions(title="My Report"))
         assert "My Report" in html
 
     def test_custom_css(self):
@@ -29,9 +27,7 @@ class TestMetricsExporter:
 
     def test_no_timestamp(self):
         data = {"Metric": "Value"}
-        html = MetricsExporter.export_as_html(
-            data, ExportOptions(include_timestamp=False)
-        )
+        html = MetricsExporter.export_as_html(data, ExportOptions(include_timestamp=False))
         assert "Generated:" not in html
 
     def test_file_output(self, tmp_path):

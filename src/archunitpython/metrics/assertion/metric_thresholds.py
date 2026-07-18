@@ -31,9 +31,7 @@ class FileCountViolation(Violation):
     comparison: MetricComparison
 
 
-def check_threshold(
-    value: float, threshold: float, comparison: MetricComparison
-) -> bool:
+def check_threshold(value: float, threshold: float, comparison: MetricComparison) -> bool:
     """Check if a value violates a threshold.
 
     Returns True if the value is a VIOLATION.

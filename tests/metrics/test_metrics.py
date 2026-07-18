@@ -2,11 +2,7 @@
 
 import os
 
-from archunitpython.metrics.common.types import ClassInfo, FieldInfo, MethodInfo
-from archunitpython.metrics.extraction.extract_class_info import (
-    extract_class_info,
-    extract_enhanced_class_info,
-)
+from archunitpython.metrics.assertion.metric_thresholds import check_threshold
 from archunitpython.metrics.calculation.count import (
     ClassCountMetric,
     FieldCountMetric,
@@ -15,6 +11,9 @@ from archunitpython.metrics.calculation.count import (
     LinesOfCodeMetric,
     MethodCountMetric,
     StatementCountMetric,
+)
+from archunitpython.metrics.calculation.distance import (
+    calculate_distance_metrics_for_project,
 )
 from archunitpython.metrics.calculation.lcom import (
     LCOM1,
@@ -26,11 +25,11 @@ from archunitpython.metrics.calculation.lcom import (
     LCOM96b,
     LCOMStar,
 )
-from archunitpython.metrics.calculation.distance import (
-    calculate_distance_metrics_for_project,
-    calculate_file_distance_metrics,
+from archunitpython.metrics.common.types import ClassInfo, FieldInfo, MethodInfo
+from archunitpython.metrics.extraction.extract_class_info import (
+    extract_class_info,
+    extract_enhanced_class_info,
 )
-from archunitpython.metrics.assertion.metric_thresholds import check_threshold
 
 FIXTURES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "fixtures", "metrics_project"
@@ -39,6 +38,7 @@ SERVICE_FILE = os.path.join(FIXTURES_DIR, "service.py")
 
 
 # --- TICKET-14: Class Info Extraction ---
+
 
 class TestExtractClassInfo:
     def test_extracts_classes(self):
@@ -85,6 +85,7 @@ class TestExtractClassInfo:
 
 # --- TICKET-15: Count Metrics ---
 
+
 class TestCountMetrics:
     def test_method_count(self):
         ci = ClassInfo(
@@ -124,6 +125,7 @@ class TestCountMetrics:
 
 
 # --- TICKET-16: LCOM Metrics ---
+
 
 def _make_perfect_cohesion():
     """All methods access all fields → perfect cohesion."""
@@ -219,6 +221,7 @@ class TestAllLCOMVariants:
 
 # --- TICKET-17: Distance Metrics ---
 
+
 class TestDistanceMetrics:
     def test_project_summary(self):
         results = extract_enhanced_class_info(FIXTURES_DIR)
@@ -233,6 +236,7 @@ class TestDistanceMetrics:
 
 
 # --- Threshold Checking ---
+
 
 class TestCheckThreshold:
     def test_below(self):

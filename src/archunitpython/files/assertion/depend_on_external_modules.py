@@ -34,8 +34,7 @@ def gather_depend_on_external_module_violations(
 
     for edge in edges:
         source_matches = all(
-            matches_pattern(edge.source_label, filter_)
-            for filter_ in subject_filters
+            matches_pattern(edge.source_label, filter_) for filter_ in subject_filters
         )
         if not source_matches:
             continue
@@ -49,16 +48,12 @@ def gather_depend_on_external_module_violations(
         if is_negated:
             if target_matches:
                 violations.append(
-                    ViolatingExternalModuleDependency(
-                        dependency=edge, is_negated=True
-                    )
+                    ViolatingExternalModuleDependency(dependency=edge, is_negated=True)
                 )
         else:
             if not target_matches:
                 violations.append(
-                    ViolatingExternalModuleDependency(
-                        dependency=edge, is_negated=False
-                    )
+                    ViolatingExternalModuleDependency(dependency=edge, is_negated=False)
                 )
 
     return violations

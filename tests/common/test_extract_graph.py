@@ -64,6 +64,48 @@ class TestExtractImports:
         result = _extract_imports("/nonexistent/file.py")
         assert result == []
 
+    def test_dynamic_import(self):
+        temp_root = Path(__file__).resolve().parent / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        project_root = temp_root / f"project_{uuid4().hex}"
+        project_root.mkdir()
+        file_path = project_root / "loader.py"
+        file_path.write_text(
+            'def load():\n    return __import__("sample_project.models")\n',
+            encoding="utf-8",
+        )
+
+        try:
+            imports = _extract_imports(str(file_path))
+            assert ("sample_project.models", ImportKind.DYNAMIC_IMPORT) in imports
+        finally:
+            shutil.rmtree(project_root, ignore_errors=True)
+
+    def test_importlib_import_module(self):
+        temp_root = Path(__file__).resolve().parent / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        project_root = temp_root / f"project_{uuid4().hex}"
+        project_root.mkdir()
+        file_path = project_root / "loader.py"
+        file_path.write_text(
+            "\n".join(
+                [
+                    "import importlib",
+                    "",
+                    "def load():",
+                    '    return importlib.import_module("sample_project.models")',
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+        try:
+            imports = _extract_imports(str(file_path))
+            assert ("sample_project.models", ImportKind.DYNAMIC_IMPORT) in imports
+        finally:
+            shutil.rmtree(project_root, ignore_errors=True)
+
 
 class TestExtractGraph:
     def setup_method(self):
@@ -84,11 +126,7 @@ class TestExtractGraph:
 
     def test_internal_edges_detected(self):
         graph = extract_graph(SAMPLE_PROJECT)
-        internal_non_self = [
-            e
-            for e in graph
-            if not e.external and e.source != e.target
-        ]
+        internal_non_self = [e for e in graph if not e.external and e.source != e.target]
         assert len(internal_non_self) > 0
 
     def test_external_edges_detected(self):
@@ -107,11 +145,7 @@ class TestExtractGraph:
         )
         # service_b imports from .service (relative)
         rel_edges = [
-            e
-            for e in graph
-            if e.source == service_b
-            and e.target == service
-            and not e.external
+            e for e in graph if e.source == service_b and e.target == service and not e.external
         ]
         assert len(rel_edges) == 1
 
@@ -122,9 +156,7 @@ class TestExtractGraph:
 
     def test_cache_clear(self):
         graph1 = extract_graph(SAMPLE_PROJECT)
-        graph2 = extract_graph(
-            SAMPLE_PROJECT, options=CheckOptions(clear_cache=True)
-        )
+        graph2 = extract_graph(SAMPLE_PROJECT, options=CheckOptions(clear_cache=True))
         assert graph1 is not graph2  # Different objects after cache clear
 
     def test_edge_has_import_kinds(self):
@@ -253,9 +285,7 @@ class TestTypeCheckingImportHandling:
         ).replace("\\", "/")
 
         edges = [
-            edge
-            for edge in graph
-            if edge.source == service_path and edge.target == models_path
+            edge for edge in graph if edge.source == service_path and edge.target == models_path
         ]
         assert len(edges) == 1
         assert ImportKind.TYPE_IMPORT in edges[0].import_kinds
@@ -275,9 +305,7 @@ class TestTypeCheckingImportHandling:
         ).replace("\\", "/")
 
         edges = [
-            edge
-            for edge in graph
-            if edge.source == service_path and edge.target == models_path
+            edge for edge in graph if edge.source == service_path and edge.target == models_path
         ]
         assert edges == []
 
@@ -292,6 +320,125 @@ class TestTypeCheckingImportHandling:
 
         assert default_graph is not filtered_graph
         assert len(default_graph) > len(filtered_graph)
+
+
+class TestDynamicImportGraphHandling:
+    def setup_method(self):
+        clear_graph_cache()
+
+    def _build_dynamic_project(self) -> str:
+        temp_root = Path(__file__).resolve().parent / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        project_root = temp_root / f"project_{uuid4().hex}"
+        project_root.mkdir()
+
+        package_dir = project_root / "sample_project"
+        package_dir.mkdir(parents=True, exist_ok=True)
+
+        (package_dir / "__init__.py").write_text("", encoding="utf-8")
+        (package_dir / "models.py").write_text(
+            "class User:\n    pass\n",
+            encoding="utf-8",
+        )
+        (package_dir / "loader.py").write_text(
+            "\n".join(
+                [
+                    "def load_model():",
+                    '    return __import__("sample_project.models")',
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        self._temp_dir = project_root
+        return str(project_root)
+
+    def teardown_method(self):
+        temp_dir = getattr(self, "_temp_dir", None)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_dynamic_import_resolves_to_internal_edge(self):
+        project_root = self._build_dynamic_project()
+
+        graph = extract_graph(project_root)
+        models_path = os.path.abspath(
+            os.path.join(project_root, "sample_project", "models.py")
+        ).replace("\\", "/")
+        loader_path = os.path.abspath(
+            os.path.join(project_root, "sample_project", "loader.py")
+        ).replace("\\", "/")
+
+        edges = [
+            edge
+            for edge in graph
+            if edge.source == loader_path and edge.target == models_path
+        ]
+        assert len(edges) == 1
+        assert ImportKind.DYNAMIC_IMPORT in edges[0].import_kinds
+
+
+class TestIgnoreDirectives:
+    def setup_method(self):
+        clear_graph_cache()
+
+    def _build_project(self, service_source: str) -> str:
+        temp_root = Path(__file__).resolve().parent / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        project_root = temp_root / f"project_{uuid4().hex}"
+        project_root.mkdir()
+
+        package_dir = project_root / "sample_project"
+        package_dir.mkdir(parents=True, exist_ok=True)
+
+        (package_dir / "__init__.py").write_text("", encoding="utf-8")
+        (package_dir / "models.py").write_text(
+            "class User:\n    pass\n",
+            encoding="utf-8",
+        )
+        (package_dir / "service.py").write_text(service_source, encoding="utf-8")
+        self._temp_dir = project_root
+        return str(project_root)
+
+    def teardown_method(self):
+        temp_dir = getattr(self, "_temp_dir", None)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _service_to_model_edges(self, project_root: str) -> list[Edge]:
+        graph = extract_graph(project_root)
+        models_path = os.path.abspath(
+            os.path.join(project_root, "sample_project", "models.py")
+        ).replace("\\", "/")
+        service_path = os.path.abspath(
+            os.path.join(project_root, "sample_project", "service.py")
+        ).replace("\\", "/")
+        return [
+            edge
+            for edge in graph
+            if edge.source == service_path and edge.target == models_path
+        ]
+
+    def test_inline_ignore_directive_removes_import_edge(self):
+        project_root = self._build_project(
+            "from sample_project.models import User  # archunit: ignore\n"
+        )
+
+        assert self._service_to_model_edges(project_root) == []
+
+    def test_standalone_ignore_directive_removes_next_import_edge(self):
+        project_root = self._build_project(
+            "# archunit: ignore\nfrom sample_project.models import User\n"
+        )
+
+        assert self._service_to_model_edges(project_root) == []
+
+    def test_module_scoped_ignore_only_removes_matching_import(self):
+        project_root = self._build_project(
+            "# archunit: ignore other.module\nfrom sample_project.models import User\n"
+        )
+
+        assert len(self._service_to_model_edges(project_root)) == 1
 
 
 class TestEdgeModel:

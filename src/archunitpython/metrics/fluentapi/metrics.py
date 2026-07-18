@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from archunitpython.common.assertion.violation import Violation
-from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
 from archunitpython.common.pattern_matching import matches_pattern_classname
 from archunitpython.common.regex_factory import RegexFactory
 from archunitpython.common.types import Filter, Pattern
@@ -97,9 +97,7 @@ class MetricsBuilder:
         )
 
 
-def _get_filtered_classes(
-    project_path: str | None, filters: list[Filter]
-) -> list[ClassInfo]:
+def _get_filtered_classes(project_path: str | None, filters: list[Filter]) -> list[ClassInfo]:
     classes = extract_class_info(project_path)
     if not filters:
         return classes
@@ -119,39 +117,25 @@ class CountMetricsBuilder:
         self._filters = filters
 
     def method_count(self) -> "ClassMetricThresholdBuilder":
-        return ClassMetricThresholdBuilder(
-            self._project_path, self._filters, MethodCountMetric()
-        )
+        return ClassMetricThresholdBuilder(self._project_path, self._filters, MethodCountMetric())
 
     def field_count(self) -> "ClassMetricThresholdBuilder":
-        return ClassMetricThresholdBuilder(
-            self._project_path, self._filters, FieldCountMetric()
-        )
+        return ClassMetricThresholdBuilder(self._project_path, self._filters, FieldCountMetric())
 
     def lines_of_code(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, LinesOfCodeMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, LinesOfCodeMetric())
 
     def statements(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, StatementCountMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, StatementCountMetric())
 
     def imports(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, ImportCountMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, ImportCountMetric())
 
     def classes(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, ClassCountMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, ClassCountMetric())
 
     def functions(self) -> "FileMetricThresholdBuilder":
-        return FileMetricThresholdBuilder(
-            self._project_path, self._filters, FunctionCountMetric()
-        )
+        return FileMetricThresholdBuilder(self._project_path, self._filters, FunctionCountMetric())
 
 
 class ClassMetricThresholdBuilder:
@@ -186,7 +170,7 @@ class ClassMetricThresholdBuilder:
         )
 
 
-class ClassMetricCondition:
+class ClassMetricCondition(RuleRationaleMixin):
     """Checkable that verifies a class-level metric threshold."""
 
     def __init__(
@@ -246,7 +230,7 @@ class FileMetricThresholdBuilder:
         )
 
 
-class FileMetricCondition:
+class FileMetricCondition(RuleRationaleMixin):
     """Checkable that verifies a file-level metric threshold."""
 
     def __init__(
@@ -340,19 +324,13 @@ class DistanceMetricsBuilder:
         self._filters = filters
 
     def abstractness(self) -> "DistanceThresholdBuilder":
-        return DistanceThresholdBuilder(
-            self._project_path, self._filters, "abstractness"
-        )
+        return DistanceThresholdBuilder(self._project_path, self._filters, "abstractness")
 
     def instability(self) -> "DistanceThresholdBuilder":
-        return DistanceThresholdBuilder(
-            self._project_path, self._filters, "instability"
-        )
+        return DistanceThresholdBuilder(self._project_path, self._filters, "instability")
 
     def distance_from_main_sequence(self) -> "DistanceThresholdBuilder":
-        return DistanceThresholdBuilder(
-            self._project_path, self._filters, "distance"
-        )
+        return DistanceThresholdBuilder(self._project_path, self._filters, "distance")
 
     def not_in_zone_of_pain(self) -> "ZoneCondition":
         return ZoneCondition(self._project_path, self._filters, "pain")
@@ -386,7 +364,7 @@ class DistanceThresholdBuilder:
         )
 
 
-class DistanceCondition:
+class DistanceCondition(RuleRationaleMixin):
     """Checkable for distance metric thresholds."""
 
     def __init__(
@@ -426,7 +404,7 @@ class DistanceCondition:
         return violations
 
 
-class ZoneCondition:
+class ZoneCondition(RuleRationaleMixin):
     """Checkable for zone detection (pain/uselessness)."""
 
     def __init__(self, project_path: str | None, filters: list[Filter], zone_type: str) -> None:
@@ -440,11 +418,7 @@ class ZoneCondition:
 
         for file_result in files:
             dm = calculate_file_distance_metrics(file_result, files)
-            in_zone = (
-                dm.in_zone_of_pain
-                if self._zone_type == "pain"
-                else dm.in_zone_of_uselessness
-            )
+            in_zone = dm.in_zone_of_pain if self._zone_type == "pain" else dm.in_zone_of_uselessness
 
             if in_zone:
                 violations.append(
@@ -511,7 +485,7 @@ class CustomMetricsBuilder:
         )
 
 
-class CustomMetricCondition:
+class CustomMetricCondition(RuleRationaleMixin):
     """Checkable for custom metric thresholds."""
 
     def __init__(
@@ -551,7 +525,7 @@ class CustomMetricCondition:
         return violations
 
 
-class CustomAssertionCondition:
+class CustomAssertionCondition(RuleRationaleMixin):
     """Checkable for custom metric assertions."""
 
     def __init__(

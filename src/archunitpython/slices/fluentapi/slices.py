@@ -14,7 +14,7 @@ import re
 
 from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.extraction.extract_graph import extract_graph
-from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
 from archunitpython.common.projection.project_edges import project_edges
 from archunitpython.common.projection.types import MapFunction
 from archunitpython.slices.assertion.admissible_edges import (
@@ -61,15 +61,11 @@ class SliceConditionBuilder:
 
     def should(self) -> "PositiveConditionBuilder":
         """Begin positive assertion (slices SHOULD ...)."""
-        return PositiveConditionBuilder(
-            self._project_path, self._pattern, self._regex
-        )
+        return PositiveConditionBuilder(self._project_path, self._pattern, self._regex)
 
     def should_not(self) -> "NegativeConditionBuilder":
         """Begin negative assertion (slices SHOULD NOT ...)."""
-        return NegativeConditionBuilder(
-            self._project_path, self._pattern, self._regex
-        )
+        return NegativeConditionBuilder(self._project_path, self._pattern, self._regex)
 
 
 class PositiveConditionBuilder:
@@ -133,9 +129,7 @@ class NegativeConditionBuilder:
         self._regex = regex
         self._forbidden_deps: list[tuple[str, str]] = []
 
-    def contain_dependency(
-        self, source: str, target: str
-    ) -> "NegativeSliceCondition":
+    def contain_dependency(self, source: str, target: str) -> "NegativeSliceCondition":
         """Assert that a specific dependency should NOT exist."""
         return NegativeSliceCondition(
             self._project_path,
@@ -146,7 +140,7 @@ class NegativeConditionBuilder:
         )
 
 
-class PositiveSliceCondition:
+class PositiveSliceCondition(RuleRationaleMixin):
     """Checkable that verifies slices adhere to a diagram."""
 
     def __init__(
@@ -170,9 +164,7 @@ class PositiveSliceCondition:
         mapper = self._get_mapper()
         edges = project_edges(graph, mapper)
 
-        return gather_positive_violations(
-            edges, rules, contained_nodes, self._coherence_options
-        )
+        return gather_positive_violations(edges, rules, contained_nodes, self._coherence_options)
 
     def _get_mapper(self) -> MapFunction:
         if self._pattern:
@@ -184,7 +176,7 @@ class PositiveSliceCondition:
         return identity()
 
 
-class NegativeSliceCondition:
+class NegativeSliceCondition(RuleRationaleMixin):
     """Checkable that verifies a specific dependency does NOT exist."""
 
     def __init__(

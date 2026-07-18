@@ -41,27 +41,19 @@ def gather_depend_on_file_violations(
     violations: list[Violation] = []
 
     for edge in edges:
-        source_matches = all(
-            matches_pattern(edge.source_label, f) for f in subject_filters
-        )
+        source_matches = all(matches_pattern(edge.source_label, f) for f in subject_filters)
         if not source_matches:
             continue
 
-        target_matches = all(
-            matches_pattern(edge.target_label, f) for f in object_filters
-        )
+        target_matches = all(matches_pattern(edge.target_label, f) for f in object_filters)
 
         if is_negated:
             # shouldNot: violation if dependency EXISTS
             if target_matches:
-                violations.append(
-                    ViolatingFileDependency(dependency=edge, is_negated=True)
-                )
+                violations.append(ViolatingFileDependency(dependency=edge, is_negated=True))
         else:
             # should: violation if dependency does NOT match
             if not target_matches:
-                violations.append(
-                    ViolatingFileDependency(dependency=edge, is_negated=False)
-                )
+                violations.append(ViolatingFileDependency(dependency=edge, is_negated=False))
 
     return violations

@@ -53,13 +53,9 @@ class JohnsonsAPSP:
         if self._is_part_of_current_start_cycle(current_node):
             self._unblock(current_node)
         else:
-            for neighbour in CycleUtils.get_outgoing_neighbours(
-                current_node, self._graph
-            ):
+            for neighbour in CycleUtils.get_outgoing_neighbours(current_node, self._graph):
                 if self._is_blocked(neighbour):
-                    self._blocked_map.append(
-                        _BlockedBy(blocked=current_node, by=neighbour)
-                    )
+                    self._blocked_map.append(_BlockedBy(blocked=current_node, by=neighbour))
 
     def _unblock(self, node: NumberNode) -> None:
         self._blocked = [n for n in self._blocked if n is not node]
@@ -74,9 +70,8 @@ class JohnsonsAPSP:
         if self._start is None:
             return False
         for cycle in self._cycles:
-            if (
-                cycle[0].from_node == self._start.node
-                and any(e.from_node == current_node.node for e in cycle)
+            if cycle[0].from_node == self._start.node and any(
+                e.from_node == current_node.node for e in cycle
             ):
                 return True
         return False

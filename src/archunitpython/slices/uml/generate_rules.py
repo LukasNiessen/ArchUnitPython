@@ -43,9 +43,7 @@ def generate_rule(puml_content: str) -> tuple[list[Rule], list[str]]:
             continue
 
         # Match component declarations: component [Name] or component [Name] #Color
-        comp_match = re.match(
-            r"component\s+\[([^\]]+)\]", stripped
-        )
+        comp_match = re.match(r"component\s+\[([^\]]+)\]", stripped)
         if comp_match:
             name = comp_match.group(1).strip()
             if name not in contained_nodes:
@@ -53,9 +51,7 @@ def generate_rule(puml_content: str) -> tuple[list[Rule], list[str]]:
             continue
 
         # Match relationships: [Source] --> [Target] or [Source] -> [Target]
-        rel_match = re.match(
-            r"\[([^\]]+)\]\s*-+>\s*\[([^\]]+)\]", stripped
-        )
+        rel_match = re.match(r"\[([^\]]+)\]\s*-+>\s*\[([^\]]+)\]", stripped)
         if rel_match:
             source = rel_match.group(1).strip()
             target = rel_match.group(2).strip()

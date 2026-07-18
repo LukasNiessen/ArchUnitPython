@@ -83,9 +83,7 @@ def gather_custom_file_violations(
 
     for node in nodes:
         # Check if node matches all pre-filters
-        if pre_filters and not all(
-            matches_pattern(node.label, f) for f in pre_filters
-        ):
+        if pre_filters and not all(matches_pattern(node.label, f) for f in pre_filters):
             continue
 
         file_info = _build_file_info(node.label)
@@ -94,14 +92,10 @@ def gather_custom_file_violations(
         if is_negated:
             # shouldNot: violation if condition IS True
             if result:
-                violations.append(
-                    CustomFileViolation(message=message, file_info=file_info)
-                )
+                violations.append(CustomFileViolation(message=message, file_info=file_info))
         else:
             # should: violation if condition is NOT True
             if not result:
-                violations.append(
-                    CustomFileViolation(message=message, file_info=file_info)
-                )
+                violations.append(CustomFileViolation(message=message, file_info=file_info))
 
     return violations

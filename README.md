@@ -6,18 +6,19 @@
 <!-- spacer -->
 <p></p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PyPI version](https://img.shields.io/pypi/v/archunitpython.svg)](https://pypi.org/project/archunitpython/)
-[![Python versions](https://img.shields.io/pypi/pyversions/archunitpython.svg)](https://pypi.org/project/archunitpython/)
-[![GitHub stars](https://img.shields.io/github/stars/LukasNiessen/ArchUnitPython.svg)](https://github.com/LukasNiessen/ArchUnitPython)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build & tests](https://img.shields.io/github/actions/workflow/status/LukasNiessen/ArchUnitPython/integrate.yaml?branch=main&label=build%20%26%20tests)](https://github.com/LukasNiessen/ArchUnitPython/actions/workflows/integrate.yaml) [![GitHub stars](https://img.shields.io/github/stars/LukasNiessen/ArchUnitPython.svg)](https://github.com/LukasNiessen/ArchUnitPython)<br>
+[![PyPI downloads](https://static.pepy.tech/badge/archunitpython/month)](https://pepy.tech/project/archunitpython) [![PyPI total downloads](https://img.shields.io/pepy/dt/archunitpython?label=total%20downloads&color=007ec6)](https://pepy.tech/project/archunitpython)
+<!-- [![PyPI version](https://img.shields.io/pypi/v/archunitpython.svg)](https://pypi.org/project/archunitpython/) -->
 
 </div>
 
 Enforce architecture rules in Python projects. Check for dependency directions, detect circular dependencies, enforce coding standards and much more. Integrates with pytest and any other testing framework. Very simple setup and pipeline integration. Zero runtime dependencies.
 
+The #1 ArchUnit-style architecture testing library for Python, measured by GitHub stars.
+
 _Inspired by the amazing ArchUnit library but we are not affiliated with ArchUnit._
 
-[Setup](#-setup) • [Use Cases](#-use-cases) • [Features](#-features) • [Contributing](CONTRIBUTING.md)
+[Setup](#-setup) • [Use Cases](#-use-cases) • [Features](#-features) • [Why ArchUnitPython?](#-library-comparison) • [Sponsor](https://github.com/sponsors/LukasNiessen) • [Contributing](CONTRIBUTING.md)
 
 ## ⚡ 5 min Quickstart
 
@@ -88,6 +89,22 @@ These tests run automatically in your testing setup, for example in your CI pipe
   run: pytest tests/test_architecture.py -v
 ```
 
+You can also export dependency graph reports as CI artifacts:
+
+```python
+from archunitpython import project_graph
+
+def test_generate_dependency_graph_reports():
+    graph = project_graph("src/").titled("Application Architecture")
+
+    graph.collapse_to_folder_depth(2).export_as_html(
+        "reports/dependency-graph.html"
+    )
+    graph.export_as_mermaid("reports/dependency-graph.mmd")
+
+    assert graph.snapshot().summary.node_count >= 0
+```
+
 ## 🚐 Setup
 
 Installation:
@@ -132,6 +149,7 @@ from archunitpython import CheckOptions
 options = CheckOptions(
     allow_empty_tests=True,  # Don't fail when no files match
     clear_cache=True,        # Clear the graph cache
+    ignore_type_checking_imports=True,  # Ignore imports inside if TYPE_CHECKING
 )
 
 violations = rule.check(options)
@@ -155,6 +173,24 @@ migrations/*.py
 
 Patterns support comments, blank lines, glob syntax, root-relative paths, path
 patterns, and directory patterns with a trailing `/`.
+### Explaining Rules With `.because(...)`
+
+Attach a rationale to a rule so failing assertions explain why the rule exists:
+
+```python
+rule = (
+    project_files("src/")
+    .in_folder("**/controllers/**")
+    .should_not()
+    .depend_on_files()
+    .in_folder("**/database/**")
+    .because("controllers should stay thin and delegate persistence")
+)
+
+assert_passes(rule)
+```
+
+When the rule fails, the rationale is included in the assertion message.
 
 ## 🐹 Use Cases
 
@@ -212,6 +248,65 @@ def test_business_not_depend_on_presentation():
         .in_folder("**/presentation/**")
     )
     assert_passes(rule)
+```
+
+### Named Layer Rules
+
+```python
+from archunitpython import project_layers
+
+def test_clean_architecture_layers():
+    rule = (
+        project_layers("src/")
+        .layer("presentation").defined_by_folder("**/presentation/**")
+        .layer("business").defined_by_folder("**/business/**")
+        .layer("database").defined_by_folder("**/database/**")
+        .where_layer("presentation")
+        .may_only_depend_on_layers("business")
+        .where_layer("business")
+        .may_only_depend_on_layers()
+        .where_layer("database")
+        .may_only_depend_on_layers()
+    )
+    assert_passes(rule)
+```
+
+### External Dependencies
+
+```python
+def test_domain_does_not_import_requests():
+    rule = (
+        project_files("src/")
+        .in_folder("**/domain/**")
+        .should_not()
+        .depend_on_external_modules()
+        .matching("requests")
+    )
+    assert_passes(rule)
+```
+
+### TYPE_CHECKING-aware Analysis
+
+```python
+from archunitpython import CheckOptions
+
+def test_type_only_dependencies_do_not_count_as_runtime_coupling():
+    rule = (
+        project_files("src/")
+        .in_folder("**/api/**")
+        .should_not()
+        .depend_on_files()
+        .in_folder("**/infrastructure/**")
+    )
+    assert_passes(rule, CheckOptions(ignore_type_checking_imports=True))
+```
+
+### Dynamic Imports and Ignore Directives
+
+ArchUnitPython detects string-based dynamic imports such as `importlib.import_module("my_app.adapters.sql")` and `__import__("my_app.adapters.sql")`. For known migration shims, you can suppress one import edge locally:
+
+```python
+from my_app.adapters.sql import Repository  # archunit: ignore
 ```
 
 ### Naming Conventions
@@ -335,6 +430,140 @@ def test_no_forbidden_dependency():
     )
     assert_passes(rule)
 ```
+
+### Dependency Graph Reports
+
+Generate dependency graph reports in multiple formats and narrow them to the part of the codebase you want to inspect.
+
+**Using [`requests`](https://github.com/psf/requests) library repo for example**
+
+```python
+from archunitpython import project_graph
+
+def test_export_dependency_graph_reports():
+    graph = project_graph("src/requests").titled("Application Architecture")
+
+    graph.collapse_to_folder_depth(2).export_as_mermaid("reports/dependencies.md")
+
+if __name__ == "__main__":
+    test_export_dependency_graph_reports()
+```
+**Exported mermaid diagram**
+``` mermaid
+flowchart LR
+  n0["__init__.py"]
+  n1["__version__.py"]
+  n2["_internal_utils.py"]
+  n3["_types.py"]
+  n4["adapters.py"]
+  n5["api.py"]
+  n6["auth.py"]
+  n7["certs.py"]
+  n8["compat.py"]
+  n9["cookies.py"]
+  n10["exceptions.py"]
+  n11["help.py"]
+  n12["hooks.py"]
+  n13["models.py"]
+  n14["packages.py"]
+  n15["sessions.py"]
+  n16["status_codes.py"]
+  n17["structures.py"]
+  n18["utils.py"]
+  n0 --> n1
+  n0 --> n5
+  n0 --> n10
+  n0 --> n13
+  n0 --> n15
+  n0 --> n16
+  n2 --> n8
+  n3 --> n6
+  n3 --> n9
+  n3 --> n13
+  n3 --> n17
+  n4 --> n0
+  n4 --> n3
+  n4 --> n6
+  n4 --> n8
+  n4 --> n9
+  n4 --> n10
+  n4 --> n13
+  n4 --> n17
+  n4 --> n18
+  n5 --> n0
+  n5 --> n13
+  n6 --> n2
+  n6 --> n8
+  n6 --> n9
+  n6 --> n13
+  n6 --> n18
+  n9 --> n2
+  n9 --> n3
+  n9 --> n8
+  n9 --> n13
+  n10 --> n8
+  n10 --> n13
+  n11 --> n0
+  n12 --> n0
+  n12 --> n13
+  n13 --> n0
+  n13 --> n2
+  n13 --> n4
+  n13 --> n6
+  n13 --> n8
+  n13 --> n9
+  n13 --> n10
+  n13 --> n12
+  n13 --> n16
+  n13 --> n17
+  n13 --> n18
+  n14 --> n8
+  n15 --> n0
+  n15 --> n2
+  n15 --> n3
+  n15 --> n4
+  n15 --> n6
+  n15 --> n8
+  n15 --> n9
+  n15 --> n10
+  n15 --> n12
+  n15 --> n13
+  n15 --> n16
+  n15 --> n17
+  n15 --> n18
+  n16 --> n17
+  n17 --> n8
+  n18 --> n0
+  n18 --> n1
+  n18 --> n2
+  n18 --> n3
+  n18 --> n8
+  n18 --> n9
+  n18 --> n10
+  n18 --> n13
+  n18 --> n17
+```
+
+Supported formats:
+
+- DOT (`export_as_dot`, `to_dot`)
+- Mermaid (`export_as_mermaid`, `to_mermaid`)
+- D2 (`export_as_d2`, `to_d2`)
+- CSV (`export_as_csv`, `to_csv`)
+- JSON (`export_as_json`, `to_json`)
+- HTML (`export_as_html`, `to_html`)
+
+Graph exploration options:
+
+- `focus_on(pattern, depth)` keeps matching files and their neighbors.
+- `reachable_from(pattern)` keeps matching files and their transitive dependencies.
+- `dependents_of(pattern)` keeps files that transitively depend on the matching files.
+- `collapse_to_folder_depth(depth)` aggregates files to folder-level graph nodes.
+- `collapse_by_pattern(pattern, replacement)` maps files to custom graph nodes.
+- `include_external_dependencies()` includes imports to external modules such as `requests` or `sqlalchemy`.
+- `include_self_dependencies()` keeps self edges that are normally hidden in reports.
+
+When you create reports through `project_graph("src/")`, internal file paths are displayed relative to that project root so the output stays readable.
 
 ### Reports
 
@@ -515,6 +744,40 @@ def test_from_file():
     assert_passes(rule)
 ```
 
+## 📊 Library Comparison
+
+Here's how ArchUnitPython compares to other Python architecture-enforcement libraries.
+
+ArchUnitPython is optimized for **architecture rules as tests**: rules live next to your normal unit tests, run in pytest/unittest/CI, and fail with test-style violation messages. Broader CLI-first tools such as [Tach](https://github.com/tach-org/tach) and [Import Linter](https://github.com/seddonym/import-linter) are excellent adjacent tools, but they solve the problem through separate configuration and commands rather than a test-native ArchUnit-style API.
+
+| Feature | **ArchUnitPython** | **Tach** | **Import Linter** | **PyTestArch** |
+| ------- | ------------------ | -------- | ----------------- | -------------- |
+| **Primary workflow** | ✅ Architecture rules as unit tests | ⚠️ CLI + `tach.toml` | ⚠️ CLI + contracts config | ⚠️ pytest-oriented evaluable architecture |
+| **ArchUnit-style fluent API** | ✅ Yes | ❌ No | ❌ No | ⚠️ Partial |
+| **Testing framework integration** | ✅ pytest, unittest, any runner | ⚠️ CI/pre-commit CLI | ⚠️ CI/pre-commit CLI | ⚠️ pytest-focused |
+| **Zero runtime dependencies** | ✅ Standard library only | ⚠️ No app runtime impact, Rust-backed tool | ❌ Tool dependencies | ❌ Tool dependencies |
+| **Circular dependency detection** | ✅ First-class | ✅ First-class | ⚠️ Contract/graph based | ⚠️ Import-rule based |
+| **File/folder dependency rules** | ✅ Glob + regex | ✅ Module config | ✅ Import contracts | ✅ Module rules |
+| **Named layer rules** | ✅ `project_layers()` | ✅ Supported | ✅ Supported | ✅ Supported |
+| **External dependency rules** | ✅ `depend_on_external_modules()` | ⚠️ Internal module focus | ⚠️ Import contract focus | ⚠️ Internal import focus |
+| **TYPE_CHECKING-aware analysis** | ✅ Configurable | ⚠️ Not the core API | ⚠️ Not the core API | ⚠️ Not the core API |
+| **Dynamic import detection** | ✅ `importlib` + `__import__` string calls | ⚠️ Not the core workflow | ⚠️ Not the core workflow | ⚠️ Import analysis focused |
+| **Inline ignore directives** | ✅ `# archunit: ignore` | ✅ Supported | ⚠️ Config-based ignores | ⚠️ Rule/exclusion based |
+| **Naming convention checks** | ✅ Files and paths | ❌ No | ❌ No | ⚠️ Module-name oriented |
+| **Code metrics** | ✅ Counts, LCOM, distance metrics | ❌ No | ❌ No | ❌ No |
+| **Custom rules and metrics** | ✅ Full support | ❌ No | ⚠️ Custom contracts | ⚠️ Limited custom rule composition |
+| **PlantUML diagram validation** | ✅ Supported | ❌ No | ❌ No | ❌ No |
+| **Empty test protection** | ✅ Fails by default | ⚠️ Config validation | ⚠️ Contract validation | ⚠️ Not the main focus |
+| **Graph/reporting** | ✅ DOT, Mermaid, D2, CSV, JSON, HTML graph reports + metrics HTML | ✅ DOT, JSON, web graph | ✅ Browser UI | ⚠️ Optional graph visualization |
+| **Best fit** | Architecture tests, CI fitness functions, metrics, diagrams | Modular monolith dependency governance | Config-driven import contracts | pytest import-boundary checks |
+
+The most important differences:
+
+- **Test-native by design**: ArchUnitPython rules are just Python tests, so architecture decisions are reviewed, run, and debugged in the same workflow as the rest of your test suite.
+- **Broader rule surface**: dependency direction, cycles, layer policies, external modules, type-only imports, dynamic imports, naming, metrics, custom rules, and PlantUML validation live in one API.
+- **False-positive protection**: empty checks fail by default, which helps catch typos in file and folder patterns before they silently make your architecture tests meaningless.
+- **Quality beyond imports**: ArchUnitPython can enforce code metrics such as LCOM cohesion, field/method counts, abstractness, instability, and distance from the main sequence.
+
 ## 📢 Informative Error Messages
 
 When tests fail, you get helpful output with file paths and violation details:
@@ -576,6 +839,7 @@ The features of ArchUnitPython can very well be used as architectural fitness fu
 | **Files**   | File and folder based rules    | Stable       |
 | **Metrics** | Code quality metrics           | Stable       |
 | **Slices**  | Architecture slicing           | Stable       |
+| **Graph**   | Dependency graph reports       | Experimental |
 | **Testing** | Test framework integration     | Stable       |
 | **Common**  | Shared utilities               | Stable       |
 | **Reports** | Generate HTML reports          | Experimental |
@@ -645,6 +909,7 @@ Found a bug? Want to discuss features?
 If ArchUnitPython helps your project, please consider:
 
 - Starring the repository 💚
+- Sponsoring development via [GitHub Sponsors](https://github.com/sponsors/LukasNiessen)
 - Suggesting new features 💭
 - Contributing code or documentation ⌨️
 

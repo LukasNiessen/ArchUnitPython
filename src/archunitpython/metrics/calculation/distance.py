@@ -103,8 +103,6 @@ def calculate_distance_metrics_for_project(
         average_instability=sum(m.instability for m in metrics) / len(metrics),
         average_distance=sum(m.distance for m in metrics) / len(metrics),
         files_in_zone_of_pain=sum(1 for m in metrics if m.in_zone_of_pain),
-        files_in_zone_of_uselessness=sum(
-            1 for m in metrics if m.in_zone_of_uselessness
-        ),
+        files_in_zone_of_uselessness=sum(1 for m in metrics if m.in_zone_of_uselessness),
         total_files=len(files),
     )

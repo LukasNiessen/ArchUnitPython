@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import ast
 import os
+import re
+from dataclasses import dataclass
 
 from archunitpython.common.extraction.graph import Edge, Graph, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions
@@ -28,6 +30,34 @@ _DEFAULT_EXCLUDE = [
 ]
 
 _ARCHIGNORE_FILE = ".archignore"
+
+_IGNORE_DIRECTIVE_REGEX = re.compile(
+    r"#\s*archunit(?::|-)\s*ignore"
+    r"(?:\([^)]*\))?"
+    r"(?P<modules>(?:\s+[\w.]+)*)\s*$"
+)
+
+
+@dataclass(frozen=True)
+class _LocatedImport:
+    module_name: str
+    import_kind: ImportKind
+    line_number: int
+
+
+@dataclass(frozen=True)
+class _IgnoreDirective:
+    line_number: int
+    modules: tuple[str, ...] = ()
+
+    def matches(self, import_: _LocatedImport) -> bool:
+        if not self.modules:
+            return True
+        return any(
+            import_.module_name == module
+            or import_.module_name.startswith(f"{module}.")
+            for module in self.modules
+        )
 
 
 def clear_graph_cache(options: CheckOptions | None = None) -> None:
@@ -61,12 +91,8 @@ def extract_graph(
 
     project_path = os.path.abspath(project_path)
     excludes = _resolve_exclude_patterns(project_path, exclude_patterns)
-    ignore_type_checking_imports = bool(
-        options and options.ignore_type_checking_imports
-    )
-    cache_key = _build_cache_key(
-        project_path, excludes, ignore_type_checking_imports
-    )
+    ignore_type_checking_imports = bool(options and options.ignore_type_checking_imports)
+    cache_key = _build_cache_key(project_path, excludes, ignore_type_checking_imports)
 
     if options and options.clear_cache:
         _graph_cache.pop(cache_key, None)
@@ -135,7 +161,7 @@ def _extract_graph_uncached(
 
     edges: list[Edge] = []
     py_files_set = set(py_files)
-    normalized_py_files = {_normalize(f) for f in py_files_set}
+    normalized_py_file_set = {_normalize(f) for f in py_files_set}
 
     for file_path in py_files:
         # Add self-referencing edge (ensures the file appears as a node)
@@ -147,9 +173,10 @@ def _extract_graph_uncached(
             )
         )
 
-        # Extract and resolve imports
-        imports = _extract_imports(file_path)
-        for module_name, import_kind in imports:
+        imports = _extract_located_imports(file_path)
+        for located_import in imports:
+            module_name = located_import.module_name
+            import_kind = located_import.import_kind
             if (
                 ignore_type_checking_imports
                 and import_kind == ImportKind.TYPE_IMPORT
@@ -160,7 +187,7 @@ def _extract_graph_uncached(
             )
             if resolved and resolved != _normalize(file_path):
                 # Check if the resolved path is in our project
-                if not is_external and resolved not in normalized_py_files:
+                if not is_external and resolved not in normalized_py_file_set:
                     continue
 
                 edges.append(
@@ -250,6 +277,14 @@ def _extract_imports(file_path: str) -> list[tuple[str, ImportKind]]:
 
     Returns list of (module_name, import_kind) tuples.
     """
+    return [
+        (import_.module_name, import_.import_kind)
+        for import_ in _extract_located_imports(file_path)
+    ]
+
+
+def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
+    """Parse a Python file and extract imports with line numbers."""
     try:
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             source = f.read()
@@ -261,7 +296,8 @@ def _extract_imports(file_path: str) -> list[tuple[str, ImportKind]]:
     except SyntaxError:
         return []
 
-    imports: list[tuple[str, ImportKind]] = []
+    imports: list[_LocatedImport] = []
+    ignore_directives = _find_ignore_directives(source)
     type_checking_ranges = _find_type_checking_ranges(tree)
 
     for node in ast.walk(tree):
@@ -269,7 +305,7 @@ def _extract_imports(file_path: str) -> list[tuple[str, ImportKind]]:
             is_type = _in_type_checking(node, type_checking_ranges)
             kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.IMPORT
             for alias in node.names:
-                imports.append((alias.name, kind))
+                imports.append(_LocatedImport(alias.name, kind, node.lineno))
 
         elif isinstance(node, ast.ImportFrom):
             is_type = _in_type_checking(node, type_checking_ranges)
@@ -278,13 +314,79 @@ def _extract_imports(file_path: str) -> list[tuple[str, ImportKind]]:
                 kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.RELATIVE_IMPORT
                 module = node.module or ""
                 dots = "." * node.level
-                imports.append((f"{dots}{module}", kind))
+                imports.append(_LocatedImport(f"{dots}{module}", kind, node.lineno))
             else:
                 kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.FROM_IMPORT
                 if node.module:
-                    imports.append((node.module, kind))
+                    imports.append(_LocatedImport(node.module, kind, node.lineno))
 
-    return imports
+        elif isinstance(node, ast.Call):
+            is_type = _in_type_checking(node, type_checking_ranges)
+            kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.DYNAMIC_IMPORT
+            for module_name in _extract_dynamic_import_names(node):
+                imports.append(_LocatedImport(module_name, kind, node.lineno))
+
+    return [
+        import_
+        for import_ in imports
+        if not _is_ignored_import(import_, ignore_directives)
+    ]
+
+
+def _find_ignore_directives(source: str) -> dict[int, _IgnoreDirective]:
+    """Find architecture-ignore directives.
+
+    Supports inline directives on an import line and standalone directives that
+    apply to the following line, for example:
+
+    - from x import y  # archunit: ignore
+    - # archunit: ignore
+      from x import y
+    """
+    directives: dict[int, _IgnoreDirective] = {}
+    for index, line in enumerate(source.splitlines(), start=1):
+        match = _IGNORE_DIRECTIVE_REGEX.search(line)
+        if match is None:
+            continue
+
+        modules = tuple(match.group("modules").split())
+        target_line = index + 1 if line.strip().startswith("#") else index
+        directives[target_line] = _IgnoreDirective(target_line, modules)
+    return directives
+
+
+def _is_ignored_import(
+    import_: _LocatedImport,
+    directives: dict[int, _IgnoreDirective],
+) -> bool:
+    directive = directives.get(import_.line_number)
+    return directive is not None and directive.matches(import_)
+
+
+def _extract_dynamic_import_names(node: ast.Call) -> list[str]:
+    """Extract literal module names from common dynamic import calls."""
+    if not node.args:
+        return []
+
+    first_arg = node.args[0]
+    if not isinstance(first_arg, ast.Constant) or not isinstance(first_arg.value, str):
+        return []
+
+    if isinstance(node.func, ast.Name) and node.func.id in {
+        "__import__",
+        "import_module",
+    }:
+        return [first_arg.value]
+
+    if (
+        isinstance(node.func, ast.Attribute)
+        and node.func.attr == "import_module"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "importlib"
+    ):
+        return [first_arg.value]
+
+    return []
 
 
 def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
@@ -305,18 +407,14 @@ def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
             if is_type_checking and node.body:
                 start = node.body[0].lineno
                 end = max(
-                    getattr(n, "end_lineno", n.lineno)
-                    for n in node.body
-                    if hasattr(n, "lineno")
+                    getattr(n, "end_lineno", n.lineno) for n in node.body if hasattr(n, "lineno")
                 )
                 ranges.append((start, end))
 
-    return ranges
+    return sorted(ranges, key=lambda ele: ele[0])
 
 
-def _in_type_checking(
-    node: ast.AST, ranges: list[tuple[int, int]]
-) -> bool:
+def _in_type_checking(node: ast.AST, ranges: list[tuple[int, int]]) -> bool:
     """Check if a node is inside a TYPE_CHECKING block."""
     if not hasattr(node, "lineno"):
         return False

@@ -10,6 +10,8 @@ from archunitpython import (
     format_violations,
     metrics,
     project_files,
+    project_graph,
+    project_layers,
 )
 from archunitpython.files.assertion.cycle_free import ViolatingCycle
 
@@ -33,6 +35,12 @@ class TestTopLevelImports:
         from archunitpython import project_slices
 
         assert callable(project_slices)
+
+    def test_import_project_graph(self):
+        assert callable(project_graph)
+
+    def test_import_project_layers(self):
+        assert callable(project_layers)
 
     def test_import_metrics(self):
         from archunitpython import metrics
@@ -75,6 +83,19 @@ class TestAssertPasses:
         with pytest.raises(AssertionError, match="architecture violation"):
             assert_passes(rule)
 
+    def test_failing_rule_includes_because_rationale(self):
+        rule = (
+            project_files(FIXTURES_DIR)
+            .in_folder("**/controllers*")
+            .should_not()
+            .depend_on_files()
+            .in_folder("**/services*")
+            .because("controllers should stay thin")
+        )
+
+        with pytest.raises(AssertionError, match="Because: controllers should stay thin"):
+            assert_passes(rule)
+
 
 class TestFormatViolations:
     def test_no_violations(self):
@@ -93,6 +114,18 @@ class TestFormatViolations:
         result = format_violations([violation])
         assert "1 architecture violation" in result
         assert "Circular dependency" in result
+
+    def test_with_because_rationale(self):
+        from archunitpython.common.projection.types import ProjectedEdge
+
+        violation = ViolatingCycle(
+            cycle=[
+                ProjectedEdge(source_label="a.py", target_label="b.py"),
+                ProjectedEdge(source_label="b.py", target_label="a.py"),
+            ]
+        )
+        result = format_violations([violation], because="cycles make changes risky")
+        assert "Because: cycles make changes risky" in result
 
 
 class TestSelfTesting:
@@ -123,6 +156,7 @@ class TestSelfTesting:
         )
         violations = rule.check()
         from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
+
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0, format_violations(dep_v)
 
@@ -139,6 +173,7 @@ class TestSelfTesting:
         )
         violations = rule.check()
         from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
+
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0, format_violations(dep_v)
 
@@ -155,6 +190,7 @@ class TestSelfTesting:
         )
         violations = rule.check()
         from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
+
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0, format_violations(dep_v)
 
@@ -177,16 +213,12 @@ class TestFullWorkflow:
         )
         violations = rule.check()
         from archunitpython.files.assertion.depend_on_files import ViolatingFileDependency
+
         dep_v = [v for v in violations if isinstance(v, ViolatingFileDependency)]
         assert len(dep_v) == 0
 
     def test_metrics_on_sample(self):
-        rule = (
-            metrics(FIXTURES_DIR)
-            .count()
-            .method_count()
-            .should_be_below(100)
-        )
+        rule = metrics(FIXTURES_DIR).count().method_count().should_be_below(100)
         assert_passes(rule)
 
     def test_custom_condition(self):
