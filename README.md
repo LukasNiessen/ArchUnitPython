@@ -173,6 +173,42 @@ migrations/*.py
 
 Patterns support comments, blank lines, glob syntax, root-relative paths, path
 patterns, and directory patterns with a trailing `/`.
+
+### Loading Common Rules From Config
+
+For straightforward shared rules, you can load a JSON config file and still run
+the resulting rules in your normal test suite:
+
+```json
+{
+  "project_path": "src",
+  "rules": [
+    {
+      "name": "controllers must not use services directly",
+      "type": "forbidden_dependency",
+      "source": "**/controllers/**",
+      "target": "**/services/**"
+    },
+    {
+      "name": "source files have no cycles",
+      "type": "no_cycles"
+    }
+  ]
+}
+```
+
+```python
+from archunitpython import assert_passes, rules_from_config
+
+def test_configured_architecture_rules():
+    for rule in rules_from_config("archunitpython.json"):
+        assert_passes(rule)
+```
+
+Supported rule types are `no_cycles`, `forbidden_dependency`, and
+`forbidden_external_dependency`. The fluent Python API remains the primary and
+most flexible interface.
+
 ### Explaining Rules With `.because(...)`
 
 Attach a rationale to a rule so failing assertions explain why the rule exists:
