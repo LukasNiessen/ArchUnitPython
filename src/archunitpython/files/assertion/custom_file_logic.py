@@ -72,8 +72,8 @@ def gather_custom_file_violations(
         nodes: All projected nodes.
         condition: Custom function that returns True if the file passes.
         message: Message to include in violation.
-        is_negated: If False (should adhere), violation when condition returns False.
-                    If True (shouldNot adhere), violation when condition returns True.
+        is_negated: If False (positive assertion), violation when condition returns False.
+                    If True (negated assertion), violation when condition returns True.
         pre_filters: Filters to apply before checking the condition.
 
     Returns:
@@ -90,7 +90,7 @@ def gather_custom_file_violations(
         result = condition(file_info)
 
         if is_negated:
-            # shouldNot: violation if condition IS True
+            # Negated assertion: violation if condition IS True
             if result:
                 violations.append(CustomFileViolation(message=message, file_info=file_info))
         else:

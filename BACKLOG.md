@@ -19,7 +19,7 @@ This backlog collects product and maintenance ideas from project research.
 ## P1 - Python Import Semantics
 
 - Add support for namespace packages that do not contain `__init__.py`.
-- Detect dynamic imports such as `importlib.import_module()` and `__import__()`.
+- [x] Detect dynamic imports such as `importlib.import_module()` and `__import__()`.
 - Detect conditional imports such as `try/except ImportError`.
 - Add better `TYPE_CHECKING` import handling, including options to ignore, include, or report type-only imports separately.
 - Improve external dependency rules so users can express allowed and forbidden third-party packages at module or slice level.
@@ -30,12 +30,12 @@ This backlog collects product and maintenance ideas from project research.
 - Add comprehensive HTML reports with dependency graphs, metric charts, and zone visualization.
 - Auto-generate architecture documentation based on tests and rule rationales.
 - Make logged paths clickable in IDEs and common terminal integrations.
-- Add PlantUML or Mermaid export for discovered architecture graphs.
+- [x] Add PlantUML or Mermaid export for discovered architecture graphs.
 - Improve metric export examples and document how metric thresholds should be selected.
 
 ## P2 - Rule Surface
 
-- Add first-class layered architecture helpers so common clean/hexagonal/layered rules require less boilerplate.
+- [x] Add first-class layered architecture helpers so common clean/hexagonal/layered rules require less boilerplate.
 - Add slice isolation helpers for bounded contexts and modular monoliths.
 - Add richer custom rule hooks for dependency edges, files, classes, and metrics.
 - Add transitive dependency checks, especially for "domain must not transitively reach infrastructure" style rules.
@@ -56,7 +56,7 @@ This backlog collects product and maintenance ideas from project research.
 
 ## P3 - Packaging And Docs
 
-- Publish to PyPI as part of the release pipeline if this is not already automated.
+- [x] Publish to PyPI as part of the release pipeline if this is not already automated.
 - Add a Sphinx or MkDocs documentation site.
 - Add a complete example repository or examples folder covering pytest, unittest, PlantUML, metrics, and CI.
 - Add contribution guidance for new rule types and metric implementations.
