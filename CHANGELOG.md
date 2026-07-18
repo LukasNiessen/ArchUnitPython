@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.2.1...v1.3.0) (2026-07-05)
+
+
+### Features
+
+* add because rule rationales ([491c666](https://github.com/LukasNiessen/ArchUnitPython/commit/491c666f1f8a6ef2f5ccd782a4e4c79ed39321f6))
+
 ## [1.2.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.2.0...v1.2.1) (2026-06-28)
 
 
