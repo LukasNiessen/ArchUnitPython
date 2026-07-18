@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.4.0...v1.5.0) (2026-07-18)
+
+
+### Features
+
+* load common rules from config ([c7c968a](https://github.com/LukasNiessen/ArchUnitPython/commit/c7c968af20e929f7e7a2372275eaa7e26cb38e5f))
+
 # [1.4.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.3.0...v1.4.0) (2026-07-18)
 
 
