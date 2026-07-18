@@ -5,7 +5,10 @@ from __future__ import annotations
 import ast
 import os
 
-from archunitpython.common.extraction.extract_graph import _DEFAULT_EXCLUDE, _find_python_files
+from archunitpython.common.extraction.extract_graph import (
+    _find_python_files,
+    _resolve_exclude_patterns,
+)
 from archunitpython.metrics.common.types import (
     ClassInfo,
     EnhancedClassInfo,
@@ -33,7 +36,7 @@ def extract_class_info(
         project_path = os.getcwd()
 
     project_path = os.path.abspath(project_path)
-    excludes = exclude_patterns if exclude_patterns is not None else _DEFAULT_EXCLUDE
+    excludes = _resolve_exclude_patterns(project_path, exclude_patterns)
     py_files = _find_python_files(project_path, excludes)
 
     classes: list[ClassInfo] = []
@@ -53,7 +56,7 @@ def extract_enhanced_class_info(
         project_path = os.getcwd()
 
     project_path = os.path.abspath(project_path)
-    excludes = exclude_patterns if exclude_patterns is not None else _DEFAULT_EXCLUDE
+    excludes = _resolve_exclude_patterns(project_path, exclude_patterns)
     py_files = _find_python_files(project_path, excludes)
 
     results: list[FileAnalysisResult] = []
