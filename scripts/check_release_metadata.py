@@ -17,7 +17,7 @@ def read_project_version() -> str:
     content = PYPROJECT.read_text(encoding="utf-8")
     match = re.search(r'^version = "([^"]+)"$', content, re.MULTILINE)
     if match is None:
-        raise RuntimeError("Could not find project.version in pyproject.toml")
+        raise RuntimeError("Could not find [project].version in pyproject.toml")
     return match.group(1)
 
 
