@@ -29,6 +29,8 @@ _DEFAULT_EXCLUDE = [
     "*.egg-info",
 ]
 
+_ARCHIGNORE_FILE = ".archignore"
+
 _IGNORE_DIRECTIVE_REGEX = re.compile(
     r"#\s*archunit(?::|-)\s*ignore"
     r"(?:\([^)]*\))?"
@@ -89,9 +91,7 @@ def extract_graph(
         project_path = os.getcwd()
 
     project_path = os.path.abspath(project_path)
-    excludes = (
-        list(set(exclude_patterns)) if exclude_patterns is not None else list(_DEFAULT_EXCLUDE)
-    )
+    excludes = _resolve_exclude_patterns(project_path, exclude_patterns)
     ignore_type_checking_imports = bool(options and options.ignore_type_checking_imports)
     cache_key = _build_cache_key(project_path, excludes, ignore_type_checking_imports)
 
@@ -121,6 +121,34 @@ def _build_cache_key(
         tuple(sorted(exclude_patterns)),
         ignore_type_checking_imports,
     )
+
+
+def _resolve_exclude_patterns(
+    project_path: str,
+    exclude_patterns: list[str] | None,
+) -> list[str]:
+    """Resolve exclude patterns (explicit or defaults) plus any .archignore patterns."""
+    excludes = list(exclude_patterns) if exclude_patterns is not None else list(_DEFAULT_EXCLUDE)
+    excludes.extend(_load_archignore_patterns(project_path))
+    return excludes
+
+
+def _load_archignore_patterns(project_path: str) -> list[str]:
+    """Load .archignore patterns from a project root, if present."""
+    archignore_path = os.path.join(project_path, _ARCHIGNORE_FILE)
+    try:
+        with open(archignore_path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+    except OSError:
+        return []
+
+    patterns: list[str] = []
+    for line in lines:
+        pattern = line.strip()
+        if not pattern or pattern.startswith("#"):
+            continue
+        patterns.append(pattern)
+    return patterns
 
 
 def _extract_graph_uncached(
@@ -160,7 +188,7 @@ def _extract_graph_uncached(
                 if resolved and resolved != _normalize(file_path):
                     # Check if the resolved path is in our project
                     if not is_external and resolved not in normalized_py_file_set:
-                        is_external = True
+                        continue
 
                     edges.append(
                         Edge(
@@ -182,25 +210,65 @@ def _normalize(path: str) -> str:
 def _find_python_files(root: str, exclude: list[str]) -> list[str]:
     """Recursively find all .py files, excluding specified patterns."""
     py_files: list[str] = []
+    root = os.path.abspath(root)
     for dirpath, dirnames, filenames in os.walk(root):
         # Filter out excluded directories in-place
-        dirnames[:] = [d for d in dirnames if not _should_exclude(d, exclude)]
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if not _should_exclude_path(os.path.join(dirpath, d), root, exclude, is_dir=True)
+        ]
 
         for filename in filenames:
-            if filename.endswith(".py") and not _should_exclude(filename, exclude):
-                full_path = os.path.join(dirpath, filename)
+            full_path = os.path.join(dirpath, filename)
+            if filename.endswith(".py") and not _should_exclude_path(
+                full_path, root, exclude, is_dir=False
+            ):
                 py_files.append(os.path.abspath(full_path))
 
     return py_files
 
 
-def _should_exclude(name: str, patterns: list[str]) -> bool:
-    """Check if a name matches any exclude pattern."""
+def _should_exclude_path(
+    path: str,
+    root: str,
+    patterns: list[str],
+    *,
+    is_dir: bool,
+) -> bool:
+    """Check if a path matches any exclude pattern."""
     import fnmatch
 
-    for pattern in patterns:
-        if fnmatch.fnmatch(name, pattern):
+    rel_path = _normalize(os.path.relpath(path, root))
+    name = os.path.basename(path)
+
+    for raw_pattern in patterns:
+        pattern = raw_pattern.strip().replace("\\", "/")
+        if not pattern or pattern.startswith("#"):
+            continue
+
+        pattern = pattern.removeprefix("./")
+        anchored = pattern.startswith("/")
+        if anchored:
+            pattern = pattern[1:]
+
+        dir_only = pattern.endswith("/")
+        if dir_only:
+            pattern = pattern.rstrip("/")
+            if not is_dir:
+                continue
+
+        if not pattern:
+            continue
+
+        if "/" in pattern or anchored:
+            if fnmatch.fnmatch(rel_path, pattern):
+                return True
+            if is_dir and rel_path == pattern:
+                return True
+        elif fnmatch.fnmatch(name, pattern):
             return True
+
     return False
 
 
@@ -408,6 +476,7 @@ def _resolve_import_targets(
         return [(resolved, is_external)]
 
     alias_targets: list[tuple[str, bool]] = []
+    found_internal_alias = False
     for alias in import_.aliases:
         alias_module = _join_import_alias(import_.module_name, alias)
         alias_resolved, alias_is_external = _resolve_import(
@@ -416,10 +485,12 @@ def _resolve_import_targets(
             project_root,
             import_.import_kind,
         )
-        if not alias_is_external:
-            alias_targets.append((alias_resolved, alias_is_external))
+        alias_targets.append((alias_resolved, alias_is_external))
+        found_internal_alias = found_internal_alias or not alias_is_external
 
-    return alias_targets or [(resolved, is_external)]
+    if found_internal_alias:
+        return alias_targets
+    return [(resolved, is_external)]
 
 
 def _join_import_alias(module_name: str, alias: str) -> str:

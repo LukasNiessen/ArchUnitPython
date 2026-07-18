@@ -11,6 +11,7 @@ from archunitpython.common.extraction.extract_graph import (
     _extract_imports,
     _find_python_files,
     _normalize,
+    _resolve_exclude_patterns,
     clear_graph_cache,
     extract_graph,
 )
@@ -164,6 +165,73 @@ class TestExtractGraph:
         assert len(edges_with_kinds) > 0
 
 
+class TestArchignore:
+    def setup_method(self):
+        clear_graph_cache()
+        self._temp_dir = Path(__file__).resolve().parent / ".tmp" / f"project_{uuid4().hex}"
+        self._temp_dir.mkdir(parents=True)
+
+    def teardown_method(self):
+        shutil.rmtree(self._temp_dir, ignore_errors=True)
+
+    def _write(self, relative_path: str, content: str = "") -> None:
+        path = self._temp_dir / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+    def test_archignore_excludes_files_and_directories(self):
+        self._write(
+            ".archignore",
+            "\n".join(
+                [
+                    "# Ignore generated architecture-test inputs",
+                    "ignored.py",
+                    "generated/",
+                    "nested/*.py",
+                    "/root_ignored.py",
+                ]
+            ),
+        )
+        self._write("keep.py")
+        self._write("ignored.py")
+        self._write("root_ignored.py")
+        self._write("generated/generated.py")
+        self._write("nested/ignored_nested.py")
+
+        excludes = _resolve_exclude_patterns(str(self._temp_dir), ["__pycache__"])
+        files = _find_python_files(str(self._temp_dir), excludes)
+        relative_files = {
+            Path(file_path).relative_to(self._temp_dir).as_posix()
+            for file_path in files
+        }
+
+        assert relative_files == {"keep.py"}
+
+    def test_archignore_ignored_files_are_not_dependency_targets(self):
+        self._write(".archignore", "ignored.py\n")
+        self._write("keep.py", "import ignored\n")
+        self._write("ignored.py", "VALUE = 1\n")
+
+        graph = extract_graph(str(self._temp_dir))
+        targets = {edge.target for edge in graph}
+
+        ignored_path = _normalize(str((self._temp_dir / "ignored.py").resolve()))
+        assert ignored_path not in targets
+
+    def test_archignore_with_invalid_utf8_bytes_does_not_abort_extraction(self):
+        (self._temp_dir / ".archignore").write_bytes(b"ignored.py\n\xff\n")
+        self._write("keep.py")
+        self._write("ignored.py")
+
+        graph = extract_graph(str(self._temp_dir))
+        sources = {edge.source for edge in graph}
+
+        keep_path = _normalize(str((self._temp_dir / "keep.py").resolve()))
+        ignored_path = _normalize(str((self._temp_dir / "ignored.py").resolve()))
+        assert keep_path in sources
+        assert ignored_path not in sources
+
+
 class TestTypeCheckingImportHandling:
     def setup_method(self):
         clear_graph_cache()
@@ -314,7 +382,12 @@ class TestNamespacePackageGraphHandling:
     def setup_method(self):
         clear_graph_cache()
 
-    def _build_namespace_project(self, service_source: str) -> str:
+    def _build_namespace_project(
+        self,
+        service_source: str,
+        *,
+        domain_modules: tuple[str, ...] = ("model",),
+    ) -> str:
         temp_root = Path(__file__).resolve().parent / ".tmp"
         temp_root.mkdir(exist_ok=True)
         project_root = temp_root / f"project_{uuid4().hex}"
@@ -324,10 +397,11 @@ class TestNamespacePackageGraphHandling:
         domain_dir.mkdir(parents=True)
         services_dir.mkdir(parents=True)
 
-        (domain_dir / "model.py").write_text(
-            "class User:\n    pass\n",
-            encoding="utf-8",
-        )
+        for module in domain_modules:
+            (domain_dir / f"{module}.py").write_text(
+                "class User:\n    pass\n",
+                encoding="utf-8",
+            )
         (services_dir / "service.py").write_text(service_source, encoding="utf-8")
 
         self._temp_dir = project_root
@@ -350,6 +424,17 @@ class TestNamespacePackageGraphHandling:
             edge for edge in graph if edge.source == service_path and edge.target == model_path
         ]
 
+    def _service_edges(self, project_root: str) -> list[Edge]:
+        graph = extract_graph(project_root)
+        service_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "services", "service.py")
+        ).replace("\\", "/")
+        return [
+            edge
+            for edge in graph
+            if edge.source == service_path and edge.target != service_path
+        ]
+
     def test_absolute_from_import_resolves_namespace_package_submodule(self):
         project_root = self._build_namespace_project(
             "from namespace_pkg.domain import model\n"
@@ -369,6 +454,84 @@ class TestNamespacePackageGraphHandling:
         assert len(edges) == 1
         assert edges[0].external is False
         assert ImportKind.RELATIVE_IMPORT in edges[0].import_kinds
+
+    def test_mixed_aliases_preserve_internal_and_external_edges(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model, remote_model\n"
+        )
+
+        edges = self._service_edges(project_root)
+        model_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "domain", "model.py")
+        ).replace("\\", "/")
+
+        assert any(edge.target == model_path and not edge.external for edge in edges)
+        assert any(
+            edge.target == "namespace_pkg.domain.remote_model" and edge.external
+            for edge in edges
+        )
+
+    def test_multiple_internal_aliases_resolve_to_each_submodule(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model, audit_model\n",
+            domain_modules=("model", "audit_model"),
+        )
+
+        internal_targets = {
+            edge.target for edge in self._service_edges(project_root) if not edge.external
+        }
+        expected_targets = {
+            os.path.abspath(
+                os.path.join(project_root, "namespace_pkg", "domain", f"{module}.py")
+            ).replace("\\", "/")
+            for module in ("model", "audit_model")
+        }
+
+        assert internal_targets == expected_targets
+
+    def test_all_external_aliases_keep_original_base_edge(self):
+        project_root = self._build_namespace_project(
+            "from vendor_sdk import Client, Config\n"
+        )
+
+        external_targets = {
+            edge.target for edge in self._service_edges(project_root) if edge.external
+        }
+
+        assert external_targets == {"vendor_sdk"}
+
+    def test_as_alias_uses_original_submodule_name(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model as domain_model\n"
+        )
+
+        assert len(self._service_to_model_edges(project_root)) == 1
+
+    def test_relative_mixed_aliases_preserve_unresolved_edge(self):
+        project_root = self._build_namespace_project(
+            "from ..domain import model, remote_model\n"
+        )
+
+        edges = self._service_edges(project_root)
+        unresolved_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "domain", "remote_model.py")
+        ).replace("\\", "/")
+
+        assert len(self._service_to_model_edges(project_root)) == 1
+        assert any(
+            edge.target == unresolved_path and edge.external for edge in edges
+        )
+
+    def test_archignore_suppresses_resolved_namespace_target(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model\n"
+        )
+        Path(project_root, ".archignore").write_text(
+            "namespace_pkg/domain/model.py\n",
+            encoding="utf-8",
+        )
+
+        assert self._service_to_model_edges(project_root) == []
 
 
 class TestIgnoreDirectives:

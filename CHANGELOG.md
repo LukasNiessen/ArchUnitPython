@@ -1,3 +1,30 @@
+# [1.5.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.4.0...v1.5.0) (2026-07-18)
+
+
+### Features
+
+* load common rules from config ([c7c968a](https://github.com/LukasNiessen/ArchUnitPython/commit/c7c968af20e929f7e7a2372275eaa7e26cb38e5f))
+
+# [1.4.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.3.0...v1.4.0) (2026-07-18)
+
+
+### Bug Fixes
+
+* clarify metadata and exclude messages ([999bb68](https://github.com/LukasNiessen/ArchUnitPython/commit/999bb689594ff613b5f4445191509bcdaa9a514f))
+* harden archignore loading ([ae88c93](https://github.com/LukasNiessen/ArchUnitPython/commit/ae88c932ae2838cff0eabab687ac948f4920c3eb))
+
+
+### Features
+
+* support archignore exclusions ([c51c401](https://github.com/LukasNiessen/ArchUnitPython/commit/c51c40148425b08ce0257d75dd95c996d0505b00))
+
+# [1.3.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.2.1...v1.3.0) (2026-07-05)
+
+
+### Features
+
+* add because rule rationales ([491c666](https://github.com/LukasNiessen/ArchUnitPython/commit/491c666f1f8a6ef2f5ccd782a4e4c79ed39321f6))
+
 ## [1.2.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.2.0...v1.2.1) (2026-06-28)
 
 

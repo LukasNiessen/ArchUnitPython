@@ -7,7 +7,11 @@ from archunitpython.common.fluentapi.checkable import Checkable, CheckOptions
 from archunitpython.testing.common.violation_factory import ViolationFactory
 
 
-def format_violations(violations: list[Violation]) -> str:
+def format_violations(
+    violations: list[Violation],
+    *,
+    because: str | None = None,
+) -> str:
     """Format violations into a human-readable string.
 
     Args:
@@ -19,7 +23,10 @@ def format_violations(violations: list[Violation]) -> str:
     if not violations:
         return "No violations found."
 
-    lines = [f"Found {len(violations)} architecture violation(s):", ""]
+    lines = [f"Found {len(violations)} architecture violation(s):"]
+    if because:
+        lines.extend(["", f"Because: {because}"])
+    lines.append("")
     for i, violation in enumerate(violations, 1):
         tv = ViolationFactory.from_violation(violation)
         lines.append(f"  {i}. {tv.message}")
@@ -44,4 +51,5 @@ def assert_passes(
     """
     violations = checkable.check(options)
     if violations:
-        raise AssertionError(format_violations(violations))
+        because = getattr(checkable, "because_reason", None)
+        raise AssertionError(format_violations(violations, because=because))
