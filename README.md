@@ -485,13 +485,13 @@ from archunitpython import project_graph
 def test_export_dependency_graph_reports():
     graph = project_graph("src/requests").titled("Application Architecture")
 
-    graph.collapse_to_folder_depth(2).export_as_mermaid("reports/dependencies.md")
+    graph.collapse_to_folder_depth(2).export_as_mermaid("reports/dependencies.mmd")
 
 if __name__ == "__main__":
     test_export_dependency_graph_reports()
 ```
-**Exported mermaid diagram**
-``` mermaid
+**Exported Mermaid diagram**
+```mermaid
 flowchart LR
   n0["__init__.py"]
   n1["__version__.py"]
