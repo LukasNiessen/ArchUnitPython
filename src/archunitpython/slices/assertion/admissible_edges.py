@@ -30,7 +30,7 @@ def gather_violations(
     edges: list[ProjectedEdge],
     rules: list[Rule],
 ) -> list[Violation]:
-    """Check for forbidden dependencies (used with shouldNot).
+    """Check for forbidden dependencies (used with `should_not()`).
 
     Args:
         edges: Projected dependency edges between slices.
