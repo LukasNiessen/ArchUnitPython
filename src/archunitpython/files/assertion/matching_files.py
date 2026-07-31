@@ -29,8 +29,8 @@ def gather_regex_matching_violations(
     Args:
         nodes: Files to check.
         check_filters: Patterns to match against.
-        is_negated: If False (should), files MUST match all patterns.
-                    If True (shouldNot), files must NOT match any pattern.
+        is_negated: If False (`should()`), files MUST match all patterns.
+                    If True (`should_not()`), files must NOT match any pattern.
 
     Returns:
         List of violations.
@@ -41,7 +41,7 @@ def gather_regex_matching_violations(
         for filter_ in check_filters:
             matched = matches_pattern(node.label, filter_)
             if is_negated:
-                # shouldNot: violation if file DOES match
+                # should_not(): violation if file DOES match
                 if matched:
                     violations.append(
                         ViolatingNode(

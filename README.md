@@ -369,6 +369,10 @@ def test_naming_patterns():
 
 ### Code Metrics
 
+Metric rules evaluate every matching file or class independently. Use filters such as
+`in_folder()`, `with_name()`, and `for_classes_matching()` when different parts of the
+project need different limits.
+
 ```python
 def test_no_large_files():
     rule = metrics("src/").count().lines_of_code().should_be_below(1000)
@@ -379,7 +383,7 @@ def test_high_class_cohesion():
     assert_passes(rule)
 
 def test_method_count():
-    rule = metrics("src/").count().method_count().should_be_below(20)
+    rule = metrics("src/").count().method_count().should_be_below_or_equal(20)
     assert_passes(rule)
 
 def test_field_count_for_data_classes():
@@ -392,6 +396,45 @@ def test_field_count_for_data_classes():
     )
     assert_passes(rule)
 ```
+
+#### Comparison Semantics
+
+Metric comparisons are exact. In particular, `should_be_below(20)` means `< 20`, so
+a value of exactly `20` is a violation. Use the inclusive form when the limit itself
+should be accepted.
+
+| Method | Passing values |
+| --- | --- |
+| `should_be_below(n)` | `< n` |
+| `should_be_below_or_equal(n)` | `<= n` |
+| `should_be_above(n)` | `> n` |
+| `should_be_above_or_equal(n)` | `>= n` |
+| `should_be(n)` | exactly `n` |
+
+Not every metric builder exposes every comparison. The available methods are shown
+by the fluent API after selecting a metric.
+
+#### Choosing Thresholds
+
+There is no universal correct limit for every codebase. Treat thresholds as
+architecture decisions that should reflect the role and maturity of the code:
+
+1. Measure the current project before enabling a new rule.
+2. Start at the current maximum, or slightly above it, to prevent further regression.
+3. Use narrower filters when generated code, data classes, or adapters need different limits.
+4. Lower the threshold gradually as existing violations are removed.
+5. Record the reason with `.because(...)` so future maintainers understand the limit.
+
+| Metric | Interpretation | Useful starting point |
+| --- | --- | --- |
+| Lines of code | File size and review burden | Current maximum for hand-written files |
+| Method or field count | Class responsibility and size | Current maximum, split by class role |
+| LCOM | Lack of class cohesion; lower is generally better | Baseline one LCOM variant and keep it consistent |
+| Instability | Dependence on outgoing versus incoming dependencies | Compare files with similar architectural roles |
+| Distance from main sequence | Balance between abstractness and instability; closer to zero is better | Observe the current distribution before tightening |
+
+Thresholds are guardrails, not quality scores. A metric violation is a prompt to inspect
+the design; it does not automatically mean the code is incorrect.
 
 ### Distance Metrics
 
@@ -488,13 +531,13 @@ from archunitpython import project_graph
 def test_export_dependency_graph_reports():
     graph = project_graph("src/requests").titled("Application Architecture")
 
-    graph.collapse_to_folder_depth(2).export_as_mermaid("reports/dependencies.md")
+    graph.collapse_to_folder_depth(2).export_as_mermaid("reports/dependencies.mmd")
 
 if __name__ == "__main__":
     test_export_dependency_graph_reports()
 ```
-**Exported mermaid diagram**
-``` mermaid
+**Exported Mermaid diagram**
+```mermaid
 flowchart LR
   n0["__init__.py"]
   n1["__version__.py"]
@@ -612,19 +655,35 @@ When you create reports through `project_graph("src/")`, internal file paths are
 
 ### Reports
 
-Generate HTML reports for your metrics. _Note that this feature is in beta._
+Generate an HTML report from metric values collected by your tests or build tooling.
+`MetricsExporter` formats the supplied dictionary; it does not execute metric rules or
+calculate the values itself. _This feature is in beta._
 
 ```python
 from archunitpython.metrics.fluentapi.export_utils import MetricsExporter, ExportOptions
 
-MetricsExporter.export_as_html(
-    {"MethodCount": 5, "FieldCount": 3, "LinesOfCode": 150},
+metric_summary = {
+    "Maximum method count": "18 (limit: <= 20)",
+    "Maximum field count": "9 (limit: <= 10)",
+    "Maximum lines of code": "420 (limit: < 500)",
+    "Highest LCOM96b": "0.24 (limit: < 0.30)",
+}
+
+html = MetricsExporter.export_as_html(
+    metric_summary,
     ExportOptions(
         output_path="reports/metrics.html",
         title="Architecture Metrics Dashboard",
+        include_timestamp=False,
     ),
 )
+
+assert "Maximum method count" in html
 ```
+
+Keep labels and units stable if these reports are stored as CI artifacts and compared
+between builds. Continue using executable metric rules with `assert_passes()` as the
+enforcement mechanism.
 
 ## 🔎 Pattern Matching System
 
