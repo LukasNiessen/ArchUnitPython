@@ -30,9 +30,9 @@ def gather_depend_on_file_violations(
         edges: Projected dependency edges.
         subject_filters: Patterns for the source files (subject of the rule).
         object_filters: Patterns for the target files (dependency targets).
-        is_negated: If False (should), files matching subject MUST depend on
+        is_negated: If False (`should()`), files matching subject MUST depend on
                     files matching object.
-                    If True (shouldNot), files matching subject must NOT
+                    If True (`should_not()`), files matching subject must NOT
                     depend on files matching object.
 
     Returns:
@@ -48,7 +48,7 @@ def gather_depend_on_file_violations(
         target_matches = all(matches_pattern(edge.target_label, f) for f in object_filters)
 
         if is_negated:
-            # shouldNot: violation if dependency EXISTS
+            # should_not(): violation if dependency EXISTS
             if target_matches:
                 violations.append(ViolatingFileDependency(dependency=edge, is_negated=True))
         else:
