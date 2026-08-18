@@ -413,6 +413,7 @@ class TestConditionalImportGraphHandling:
         service_source: str | None = None,
         *,
         service_subdirectory: str | None = None,
+        package_init_source: str = "",
     ) -> str:
         temp_root = Path(__file__).resolve().parent / ".tmp"
         temp_root.mkdir(exist_ok=True)
@@ -422,7 +423,10 @@ class TestConditionalImportGraphHandling:
         package_dir = project_root / "sample_project"
         package_dir.mkdir(parents=True, exist_ok=True)
 
-        (package_dir / "__init__.py").write_text("", encoding="utf-8")
+        (package_dir / "__init__.py").write_text(
+            package_init_source,
+            encoding="utf-8",
+        )
         (package_dir / "fast_model.py").write_text(
             "class FastUser:\n    pass\n",
             encoding="utf-8",
@@ -560,6 +564,48 @@ class TestConditionalImportGraphHandling:
         assert len(model_edges) == 1
         assert ImportKind.RELATIVE_IMPORT in model_edges[0].import_kinds
         assert ImportKind.CONDITIONAL_IMPORT not in model_edges[0].import_kinds
+
+    def test_relative_import_of_package_attribute_uses_package_init(self):
+        project_root = self._build_conditional_project(
+            "from . import VERSION\n",
+            package_init_source='VERSION = "1.0"\n',
+        )
+
+        edges = self._conditional_edges(project_root)
+
+        assert len(edges) == 1
+        assert edges[0].target.endswith("/sample_project/__init__.py")
+        assert edges[0].external is False
+        assert edges[0].import_kinds == (ImportKind.RELATIVE_IMPORT,)
+        assert not edges[0].target.endswith("/VERSION.py")
+
+    def test_conditional_relative_import_resolves_module_and_package_attribute(self):
+        project_root = self._build_conditional_project(
+            "\n".join(
+                [
+                    "try:",
+                    "    from . import fast_model, VERSION",
+                    "except ImportError:",
+                    "    pass",
+                    "",
+                ]
+            ),
+            package_init_source='VERSION = "1.0"\n',
+        )
+
+        edges = self._conditional_edges(project_root)
+        target_paths = {
+            os.path.abspath(
+                os.path.join(project_root, "sample_project", target)
+            ).replace("\\", "/")
+            for target in ("fast_model.py", "__init__.py")
+        }
+
+        assert {edge.target for edge in edges} == target_paths
+        assert all(edge.external is False for edge in edges)
+        assert all(ImportKind.RELATIVE_IMPORT in edge.import_kinds for edge in edges)
+        assert all(ImportKind.CONDITIONAL_IMPORT in edge.import_kinds for edge in edges)
+        assert not any(edge.target.endswith("/VERSION.py") for edge in edges)
 
     def test_parent_relative_fallback_imports_resolve_modules(self):
         project_root = self._build_conditional_project(

@@ -44,6 +44,7 @@ class _LocatedImport:
     import_kind: ImportKind
     line_number: int
     resolution_kind: ImportKind | None = None
+    fallback_module_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -187,6 +188,15 @@ def _extract_graph_uncached(
             resolved, is_external = _resolve_import(
                 module_name, file_path, project_path, resolution_kind
             )
+            if is_external and located_import.fallback_module_name is not None:
+                fallback, fallback_is_external = _resolve_import(
+                    located_import.fallback_module_name,
+                    file_path,
+                    project_path,
+                    resolution_kind,
+                )
+                if fallback and not fallback_is_external:
+                    resolved, is_external = fallback, False
             if resolved and resolved != _normalize(file_path):
                 # Check if the resolved path is in our project
                 if not is_external and resolved not in normalized_py_file_set:
@@ -329,6 +339,9 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                 type_checking_ranges,
                 conditional_import_ranges,
             )
+            fallback_module_name = (
+                "." * node.level if node.level and node.module is None else None
+            )
             for module_name in _import_from_module_names(node):
                 imports.append(
                     _LocatedImport(
@@ -336,6 +349,7 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                         kind,
                         node.lineno,
                         syntax_kind,
+                        fallback_module_name,
                     )
                 )
 
@@ -549,7 +563,6 @@ def _resolve_import(
         in (
             ImportKind.RELATIVE_IMPORT,
             ImportKind.TYPE_IMPORT,
-            ImportKind.CONDITIONAL_IMPORT,
         )
         and import_name.startswith(".")
     ):

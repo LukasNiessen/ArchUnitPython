@@ -351,7 +351,9 @@ Imports inside `try` blocks that handle `ImportError` or
 reports distinguish optional imports and fallback implementations from regular
 runtime imports. Conditional dependencies remain part of architecture checks;
 relative and dynamic imports also retain their original import kind in graph
-reports.
+reports. An edge may therefore have multiple kinds: CSV reports use
+pipe-delimited values such as `relative|conditional`, while HTML reports list
+both values separately.
 
 ### Naming Conventions
 
