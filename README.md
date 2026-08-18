@@ -7,16 +7,13 @@
 <p></p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build & tests](https://img.shields.io/github/actions/workflow/status/LukasNiessen/ArchUnitPython/integrate.yaml?branch=main&label=build%20%26%20tests)](https://github.com/LukasNiessen/ArchUnitPython/actions/workflows/integrate.yaml) [![GitHub stars](https://img.shields.io/github/stars/LukasNiessen/ArchUnitPython.svg)](https://github.com/LukasNiessen/ArchUnitPython)<br>
-[![PyPI version](https://img.shields.io/pypi/v/archunitpython.svg)](https://pypi.org/project/archunitpython/) [![PyPI downloads](https://static.pepy.tech/badge/archunitpython/month)](https://pepy.tech/project/archunitpython) [![PyPI total downloads](https://img.shields.io/pepy/dt/archunitpython?label=total%20downloads&color=007ec6)](https://pepy.tech/project/archunitpython)
+[![PyPI downloads](https://static.pepy.tech/badge/archunitpython/month)](https://pepy.tech/project/archunitpython) [![PyPI total downloads](https://img.shields.io/pepy/dt/archunitpython?label=total%20downloads&color=007ec6)](https://pepy.tech/project/archunitpython)
 
 </div>
 
 Enforce architecture rules in Python projects. Check for dependency directions, detect circular dependencies, enforce coding standards and much more. Integrates with pytest and any other testing framework. Very simple setup and pipeline integration. Zero runtime dependencies.
 
 The #1 ArchUnit-style architecture testing library for Python, measured by GitHub stars.
-
-ArchUnitPython is the Python member of **ArchUnitEverything**, one recognizable
-architecture-testing library per programming language.
 
 _Inspired by the amazing ArchUnit library but we are not affiliated with ArchUnit._
 
