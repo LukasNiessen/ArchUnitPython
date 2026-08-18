@@ -344,6 +344,17 @@ ArchUnitPython detects string-based dynamic imports such as `importlib.import_mo
 from my_app.adapters.sql import Repository  # archunit: ignore
 ```
 
+### Conditional Imports
+
+Imports inside `try` blocks that handle `ImportError` or
+`ModuleNotFoundError` are marked as conditional dependencies. This helps graph
+reports distinguish optional imports and fallback implementations from regular
+runtime imports. Conditional dependencies remain part of architecture checks;
+relative and dynamic imports also retain their original import kind in graph
+reports. An edge may therefore have multiple kinds: CSV reports use
+pipe-delimited values such as `relative|conditional`, while HTML reports list
+both values separately.
+
 ### Naming Conventions
 
 ```python
