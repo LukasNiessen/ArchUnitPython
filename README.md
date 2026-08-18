@@ -8,7 +8,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build & tests](https://img.shields.io/github/actions/workflow/status/LukasNiessen/ArchUnitPython/integrate.yaml?branch=main&label=build%20%26%20tests)](https://github.com/LukasNiessen/ArchUnitPython/actions/workflows/integrate.yaml) [![GitHub stars](https://img.shields.io/github/stars/LukasNiessen/ArchUnitPython.svg)](https://github.com/LukasNiessen/ArchUnitPython)<br>
 [![PyPI downloads](https://static.pepy.tech/badge/archunitpython/month)](https://pepy.tech/project/archunitpython) [![PyPI total downloads](https://img.shields.io/pepy/dt/archunitpython?label=total%20downloads&color=007ec6)](https://pepy.tech/project/archunitpython)
-<!-- [![PyPI version](https://img.shields.io/pypi/v/archunitpython.svg)](https://pypi.org/project/archunitpython/) -->
 
 </div>
 
@@ -18,7 +17,7 @@ The #1 ArchUnit-style architecture testing library for Python, measured by GitHu
 
 _Inspired by the amazing ArchUnit library but we are not affiliated with ArchUnit._
 
-[Setup](#-setup) • [Use Cases](#-use-cases) • [Features](#-features) • [Why ArchUnitPython?](#-library-comparison) • [Sponsor](https://github.com/sponsors/LukasNiessen) • [Contributing](CONTRIBUTING.md)
+[Setup](#-setup) • [Use Cases](#-use-cases) • [Features](#-features) • [Why ArchUnitPython?](#-library-comparison) • [Sponsor](https://github.com/sponsors/LukasNiessen) • [Contributing](CONTRIBUTING.md) • [Documentation](https://lukasniessen.github.io/ArchUnitPython/)
 
 ## ⚡ 5 min Quickstart
 
@@ -1019,7 +1018,7 @@ If ArchUnitPython helps your project, please consider:
 
 ### Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=LukasNiessen/ArchUnitPython&type=Date)](https://www.star-history.com/#LukasNiessen/ArchUnitPython&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=LukasNiessen/ArchUnitPython&type=Date)](https://star-history.dera.page/#LukasNiessen/ArchUnitPython&Date)
 
 ## 📄 License
 
