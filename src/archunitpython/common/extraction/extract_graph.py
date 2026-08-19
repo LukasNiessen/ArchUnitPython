@@ -43,6 +43,7 @@ class _LocatedImport:
     module_name: str
     import_kind: ImportKind
     line_number: int
+    aliases: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -175,29 +176,28 @@ def _extract_graph_uncached(
 
         imports = _extract_located_imports(file_path)
         for located_import in imports:
-            module_name = located_import.module_name
             import_kind = located_import.import_kind
             if (
                 ignore_type_checking_imports
                 and import_kind == ImportKind.TYPE_IMPORT
             ):
                 continue
-            resolved, is_external = _resolve_import(
-                module_name, file_path, project_path, import_kind
-            )
-            if resolved and resolved != _normalize(file_path):
-                # Check if the resolved path is in our project
-                if not is_external and resolved not in normalized_py_file_set:
-                    continue
+            for resolved, is_external in _resolve_import_targets(
+                located_import, file_path, project_path
+            ):
+                if resolved and resolved != _normalize(file_path):
+                    # Check if the resolved path is in our project
+                    if not is_external and resolved not in normalized_py_file_set:
+                        continue
 
-                edges.append(
-                    Edge(
-                        source=_normalize(file_path),
-                        target=resolved,
-                        external=is_external,
-                        import_kinds=(import_kind,),
+                    edges.append(
+                        Edge(
+                            source=_normalize(file_path),
+                            target=resolved,
+                            external=is_external,
+                            import_kinds=(import_kind,),
+                        )
                     )
-                )
 
     return _merge_edges(edges)
 
@@ -314,11 +314,25 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                 kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.RELATIVE_IMPORT
                 module = node.module or ""
                 dots = "." * node.level
-                imports.append(_LocatedImport(f"{dots}{module}", kind, node.lineno))
+                imports.append(
+                    _LocatedImport(
+                        f"{dots}{module}",
+                        kind,
+                        node.lineno,
+                        _module_aliases(node),
+                    )
+                )
             else:
                 kind = ImportKind.TYPE_IMPORT if is_type else ImportKind.FROM_IMPORT
                 if node.module:
-                    imports.append(_LocatedImport(node.module, kind, node.lineno))
+                    imports.append(
+                        _LocatedImport(
+                            node.module,
+                            kind,
+                            node.lineno,
+                            _module_aliases(node),
+                        )
+                    )
 
         elif isinstance(node, ast.Call):
             is_type = _in_type_checking(node, type_checking_ranges)
@@ -389,6 +403,11 @@ def _extract_dynamic_import_names(node: ast.Call) -> list[str]:
     return []
 
 
+def _module_aliases(node: ast.ImportFrom) -> tuple[str, ...]:
+    """Return aliases that may refer to imported submodules."""
+    return tuple(alias.name for alias in node.names if alias.name != "*")
+
+
 def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
     """Find line ranges of TYPE_CHECKING blocks."""
     ranges: list[tuple[int, int]] = []
@@ -439,6 +458,48 @@ def _resolve_import(
 
     # Absolute import: try to resolve within the project
     return _resolve_absolute_import(import_name, project_root)
+
+
+def _resolve_import_targets(
+    import_: _LocatedImport,
+    source_file: str,
+    project_root: str,
+) -> list[tuple[str, bool]]:
+    """Resolve an import, including namespace-package submodule aliases."""
+    resolved, is_external = _resolve_import(
+        import_.module_name,
+        source_file,
+        project_root,
+        import_.import_kind,
+    )
+    if not is_external or not import_.aliases:
+        return [(resolved, is_external)]
+
+    alias_targets: list[tuple[str, bool]] = []
+    found_internal_alias = False
+    for alias in import_.aliases:
+        alias_module = _join_import_alias(import_.module_name, alias)
+        alias_resolved, alias_is_external = _resolve_import(
+            alias_module,
+            source_file,
+            project_root,
+            import_.import_kind,
+        )
+        alias_targets.append((alias_resolved, alias_is_external))
+        found_internal_alias = found_internal_alias or not alias_is_external
+
+    if found_internal_alias:
+        return alias_targets
+    return [(resolved, is_external)]
+
+
+def _join_import_alias(module_name: str, alias: str) -> str:
+    """Join a from-import module name with a candidate submodule alias."""
+    if not module_name:
+        return alias
+    if set(module_name) == {"."}:
+        return f"{module_name}{alias}"
+    return f"{module_name}.{alias}"
 
 
 def _resolve_relative_import(

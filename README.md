@@ -344,6 +344,12 @@ ArchUnitPython detects string-based dynamic imports such as `importlib.import_mo
 from my_app.adapters.sql import Repository  # archunit: ignore
 ```
 
+### Namespace Packages
+
+ArchUnitPython resolves imports from namespace packages that do not contain
+`__init__.py` files. For example, `from my_app.domain import model` is resolved
+to `my_app/domain/model.py` when `my_app/domain/` is a namespace package.
+
 ### Naming Conventions
 
 ```python

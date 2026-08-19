@@ -378,6 +378,162 @@ class TestDynamicImportGraphHandling:
         assert ImportKind.DYNAMIC_IMPORT in edges[0].import_kinds
 
 
+class TestNamespacePackageGraphHandling:
+    def setup_method(self):
+        clear_graph_cache()
+
+    def _build_namespace_project(
+        self,
+        service_source: str,
+        *,
+        domain_modules: tuple[str, ...] = ("model",),
+    ) -> str:
+        temp_root = Path(__file__).resolve().parent / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        project_root = temp_root / f"project_{uuid4().hex}"
+
+        domain_dir = project_root / "namespace_pkg" / "domain"
+        services_dir = project_root / "namespace_pkg" / "services"
+        domain_dir.mkdir(parents=True)
+        services_dir.mkdir(parents=True)
+
+        for module in domain_modules:
+            (domain_dir / f"{module}.py").write_text(
+                "class User:\n    pass\n",
+                encoding="utf-8",
+            )
+        (services_dir / "service.py").write_text(service_source, encoding="utf-8")
+
+        self._temp_dir = project_root
+        return str(project_root)
+
+    def teardown_method(self):
+        temp_dir = getattr(self, "_temp_dir", None)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _service_to_model_edges(self, project_root: str) -> list[Edge]:
+        graph = extract_graph(project_root)
+        model_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "domain", "model.py")
+        ).replace("\\", "/")
+        service_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "services", "service.py")
+        ).replace("\\", "/")
+        return [
+            edge for edge in graph if edge.source == service_path and edge.target == model_path
+        ]
+
+    def _service_edges(self, project_root: str) -> list[Edge]:
+        graph = extract_graph(project_root)
+        service_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "services", "service.py")
+        ).replace("\\", "/")
+        return [
+            edge
+            for edge in graph
+            if edge.source == service_path and edge.target != service_path
+        ]
+
+    def test_absolute_from_import_resolves_namespace_package_submodule(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model\n"
+        )
+
+        edges = self._service_to_model_edges(project_root)
+
+        assert len(edges) == 1
+        assert edges[0].external is False
+        assert ImportKind.FROM_IMPORT in edges[0].import_kinds
+
+    def test_relative_from_import_resolves_namespace_package_submodule(self):
+        project_root = self._build_namespace_project("from ..domain import model\n")
+
+        edges = self._service_to_model_edges(project_root)
+
+        assert len(edges) == 1
+        assert edges[0].external is False
+        assert ImportKind.RELATIVE_IMPORT in edges[0].import_kinds
+
+    def test_mixed_aliases_preserve_internal_and_external_edges(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model, remote_model\n"
+        )
+
+        edges = self._service_edges(project_root)
+        model_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "domain", "model.py")
+        ).replace("\\", "/")
+
+        assert any(edge.target == model_path and not edge.external for edge in edges)
+        assert any(
+            edge.target == "namespace_pkg.domain.remote_model" and edge.external
+            for edge in edges
+        )
+
+    def test_multiple_internal_aliases_resolve_to_each_submodule(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model, audit_model\n",
+            domain_modules=("model", "audit_model"),
+        )
+
+        internal_targets = {
+            edge.target for edge in self._service_edges(project_root) if not edge.external
+        }
+        expected_targets = {
+            os.path.abspath(
+                os.path.join(project_root, "namespace_pkg", "domain", f"{module}.py")
+            ).replace("\\", "/")
+            for module in ("model", "audit_model")
+        }
+
+        assert internal_targets == expected_targets
+
+    def test_all_external_aliases_keep_original_base_edge(self):
+        project_root = self._build_namespace_project(
+            "from vendor_sdk import Client, Config\n"
+        )
+
+        external_targets = {
+            edge.target for edge in self._service_edges(project_root) if edge.external
+        }
+
+        assert external_targets == {"vendor_sdk"}
+
+    def test_as_alias_uses_original_submodule_name(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model as domain_model\n"
+        )
+
+        assert len(self._service_to_model_edges(project_root)) == 1
+
+    def test_relative_mixed_aliases_preserve_unresolved_edge(self):
+        project_root = self._build_namespace_project(
+            "from ..domain import model, remote_model\n"
+        )
+
+        edges = self._service_edges(project_root)
+        unresolved_path = os.path.abspath(
+            os.path.join(project_root, "namespace_pkg", "domain", "remote_model.py")
+        ).replace("\\", "/")
+
+        assert len(self._service_to_model_edges(project_root)) == 1
+        assert any(
+            edge.target == unresolved_path and edge.external for edge in edges
+        )
+
+    def test_archignore_suppresses_resolved_namespace_target(self):
+        project_root = self._build_namespace_project(
+            "from namespace_pkg.domain import model\n"
+        )
+        Path(project_root, ".archignore").write_text(
+            "namespace_pkg/domain/model.py\n",
+            encoding="utf-8",
+        )
+
+        assert self._service_to_model_edges(project_root) == []
+
+
 class TestIgnoreDirectives:
     def setup_method(self):
         clear_graph_cache()
