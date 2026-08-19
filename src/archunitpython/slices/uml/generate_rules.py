@@ -37,6 +37,7 @@ def generate_rule(puml_content: str) -> tuple[list[Rule], list[str]]:
 
     for line in lines:
         stripped = line.strip()
+        
 
         # Skip empty lines, comments, @startuml/@enduml
         if not stripped or stripped.startswith("@") or stripped.startswith("'"):
@@ -50,8 +51,9 @@ def generate_rule(puml_content: str) -> tuple[list[Rule], list[str]]:
                 contained_nodes.append(name)
             continue
 
+        without_arrow_direction = re.sub(r"(-+)[a-z]+(-+)>", r"\1\2>", stripped)
         # Match relationships: [Source] --> [Target] or [Source] -> [Target]
-        rel_match = re.match(r"\[([^\]]+)\]\s*-+>\s*\[([^\]]+)\]", stripped)
+        rel_match = re.match(r"\[([^\]]+)\]\s*-+>\s*\[([^\]]+)\]", without_arrow_direction)
         if rel_match:
             source = rel_match.group(1).strip()
             target = rel_match.group(2).strip()

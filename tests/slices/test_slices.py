@@ -147,6 +147,20 @@ class TestGenerateRule:
         assert "db" in nodes
         assert len(rules) == 1
 
+
+    def test_arrow_with_direction(self):
+        puml = """
+@startuml
+  component [api]
+  component [db]
+  [api] -d-> [db]
+@enduml
+"""
+        rules, nodes = generate_rule(puml)
+        assert "api" in nodes
+        assert "db" in nodes
+        assert len(rules) == 1
+
     def test_implicit_component_declaration(self):
         puml = """
 @startuml
