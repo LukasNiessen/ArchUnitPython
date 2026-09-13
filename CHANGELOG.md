@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.6.0...v1.6.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* **deps:** bump the actions-updates group across 1 directory with 5 updates ([7a0785f](https://github.com/LukasNiessen/ArchUnitPython/commit/7a0785fddfed6c14eb1a245e34e6be2ea949f78d))
+
 # [1.6.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.5.0...v1.6.0) (2026-09-12)
 
 
