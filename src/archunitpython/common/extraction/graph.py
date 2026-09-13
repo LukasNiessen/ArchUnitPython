@@ -14,6 +14,7 @@ class ImportKind(Enum):
     RELATIVE_IMPORT = "relative"  # from . import bar / from ..foo import bar
     DYNAMIC_IMPORT = "dynamic"  # __import__('foo') / importlib.import_module()
     TYPE_IMPORT = "type"  # inside TYPE_CHECKING block
+    CONDITIONAL_IMPORT = "conditional"  # inside try/except ImportError
 
 
 @dataclass(frozen=True)

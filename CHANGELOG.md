@@ -1,3 +1,23 @@
+## [1.6.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.6.0...v1.6.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* **deps:** bump the actions-updates group across 1 directory with 5 updates ([7a0785f](https://github.com/LukasNiessen/ArchUnitPython/commit/7a0785fddfed6c14eb1a245e34e6be2ea949f78d))
+
+# [1.6.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.5.0...v1.6.0) (2026-09-12)
+
+
+### Bug Fixes
+
+* preserve package targets for relative imports ([09c9d19](https://github.com/LukasNiessen/ArchUnitPython/commit/09c9d199dec095aaa60be227bfd7b5c2b7ffb107))
+* preserve relative conditional import targets ([0ae22bb](https://github.com/LukasNiessen/ArchUnitPython/commit/0ae22bbed008c39f39b80ac6428fa1207115a394))
+
+
+### Features
+
+* classify conditional imports ([5f0f600](https://github.com/LukasNiessen/ArchUnitPython/commit/5f0f600e02d82249e0735738b43cc75317eff790))
+
 # [1.5.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.4.0...v1.5.0) (2026-07-18)
 
 

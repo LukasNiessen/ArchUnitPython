@@ -20,7 +20,7 @@ This backlog collects product and maintenance ideas from project research.
 
 - [x] Add support for namespace packages that do not contain `__init__.py`.
 - [x] Detect dynamic imports such as `importlib.import_module()` and `__import__()`.
-- Detect conditional imports such as `try/except ImportError`.
+- [x] Detect conditional imports such as `try/except ImportError`.
 - Add better `TYPE_CHECKING` import handling, including options to ignore, include, or report type-only imports separately.
 - Improve external dependency rules so users can express allowed and forbidden third-party packages at module or slice level.
 - Consider a public-interface rule inspired by Tach, where modules may only import through declared package APIs.
@@ -30,8 +30,8 @@ This backlog collects product and maintenance ideas from project research.
 - Add comprehensive HTML reports with dependency graphs, metric charts, and zone visualization.
 - Auto-generate architecture documentation based on tests and rule rationales.
 - Make logged paths clickable in IDEs and common terminal integrations.
-- [x] Add PlantUML or Mermaid export for discovered architecture graphs.
-- Improve metric export examples and document how metric thresholds should be selected.
+- Add PlantUML or Mermaid export for discovered architecture graphs.
+- [x] Improve metric export examples and document how metric thresholds should be selected.
 
 ## P2 - Rule Surface
 
