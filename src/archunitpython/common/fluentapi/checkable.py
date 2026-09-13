@@ -9,7 +9,7 @@ from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.logging.types import LoggingOptions
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CheckOptions:
     """Options for controlling rule check execution."""
 

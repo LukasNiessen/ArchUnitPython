@@ -13,7 +13,7 @@ MatchTarget = Literal["filename", "path", "path-no-filename", "classname"]
 MatchType = Literal["exact", "partial"]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PatternMatchingOptions:
     """Options controlling how a pattern is matched against file paths."""
 
@@ -21,7 +21,7 @@ class PatternMatchingOptions:
     matching: MatchType = "partial"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Filter:
     """A compiled regex filter with matching options."""
 

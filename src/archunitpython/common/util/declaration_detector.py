@@ -6,7 +6,7 @@ import ast
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(slots=True)
 class DeclarationCounts:
     """Counts of different declaration types in a Python file."""
 
@@ -88,22 +88,16 @@ def count_declarations(source: str) -> DeclarationCounts:
                     if is_abstract_method(item):
                         counts.abstract_methods += 1
 
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             # Only count module-level functions
-            if _is_module_level(node, tree):
-                counts.total += 1
-                counts.functions += 1
-
-        elif isinstance(node, ast.Assign) and _is_module_level(node, tree):
+            counts.functions += 1
             counts.total += 1
+        if isinstance(node, ast.Assign):
             counts.variables += 1
+            counts.total += 1
 
     return counts
-
-
-def _is_module_level(node: ast.AST, tree: ast.Module) -> bool:
-    """Check if a node is directly in the module body."""
-    return node in tree.body
 
 
 def _get_name(node: ast.expr) -> str:

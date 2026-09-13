@@ -8,7 +8,7 @@ from typing import Literal
 LogLevel = Literal["debug", "info", "warn", "error"]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class LoggingOptions:
     """Options for controlling logging during architecture checks."""
 
