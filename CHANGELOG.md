@@ -1,3 +1,15 @@
+# [1.7.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.6.1...v1.7.0) (2026-09-13)
+
+
+### Bug Fixes
+
+* preserve mixed namespace import targets ([489624b](https://github.com/LukasNiessen/ArchUnitPython/commit/489624b4de5465847f6e83106cbe0a398a7c1e8e))
+
+
+### Features
+
+* resolve namespace package submodule imports ([86c53e6](https://github.com/LukasNiessen/ArchUnitPython/commit/86c53e619ad25dfcdfb109de4593967d3d5603a6))
+
 ## [1.6.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.6.0...v1.6.1) (2026-09-13)
 
 
