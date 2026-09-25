@@ -83,6 +83,19 @@ class TestTypes:
         assert f.regexp.pattern == r".*\.py$"
         assert f.options.target == "filename"
 
+    def test_search_regex_does_not_change_filter_identity(self):
+        regexp = re.compile(r".*\.py$")
+        options = PatternMatchingOptions(target="filename")
+        ordinary = Filter(regexp=regexp, options=options)
+        optimized = Filter(
+            regexp=regexp,
+            options=options,
+            search_regexp=re.compile(r"\.py$"),
+        )
+        assert optimized == ordinary
+        assert hash(optimized) == hash(ordinary)
+        assert repr(optimized) == repr(ordinary)
+
     def test_filter_frozen(self):
         f = Filter(
             regexp=re.compile(r"test"),

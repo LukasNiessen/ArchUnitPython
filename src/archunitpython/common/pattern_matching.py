@@ -47,7 +47,8 @@ def matches_pattern(file_path: str, filter_: Filter) -> bool:
     else:
         target_string = normalize_path(file_path)
 
-    return bool(filter_.regexp.search(target_string))
+    regexp = filter_.search_regexp or filter_.regexp
+    return bool(regexp.search(target_string))
 
 
 def matches_pattern_classname(class_name: str, file_path: str, filter_: Filter) -> bool:
@@ -65,7 +66,8 @@ def matches_pattern_classname(class_name: str, file_path: str, filter_: Filter) 
     else:
         target_string = normalize_path(file_path)
 
-    return bool(filter_.regexp.search(target_string))
+    regexp = filter_.search_regexp or filter_.regexp
+    return bool(regexp.search(target_string))
 
 
 def matches_all_patterns(file_path: str, filters: list[Filter]) -> bool:

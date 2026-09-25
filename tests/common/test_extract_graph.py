@@ -279,6 +279,16 @@ class TestExtractGraph:
         )
         assert any(edge.target.endswith("/domain/types.py") for edge in partial)
         assert any(edge.target.endswith("/domain/optional.py") for edge in partial)
+        model_edges = [edge for edge in partial if edge.target.endswith("/domain/model.py")]
+        assert len(model_edges) == 1
+        assert set(model_edges[0].import_kinds) == {
+            ImportKind.FROM_IMPORT,
+            ImportKind.DYNAMIC_IMPORT,
+        }
+        optional_edges = [
+            edge for edge in partial if edge.target.endswith("/domain/optional.py")
+        ]
+        assert ImportKind.CONDITIONAL_IMPORT in optional_edges[0].import_kinds
 
         ignore_types = CheckOptions(ignore_type_checking_imports=True)
         partial_without_types = extract_graph_for_sources(
@@ -300,6 +310,24 @@ class TestExtractGraph:
             SAMPLE_PROJECT, [RegexFactory.folder_matcher("**/not_present*")]
         )
         assert graph == []
+
+    def test_selective_graph_respects_archignore_for_targets(self, tmp_path):
+        api = tmp_path / "api"
+        domain = tmp_path / "domain"
+        api.mkdir()
+        domain.mkdir()
+        (api / "consumer.py").write_text("from domain import model\n", encoding="utf-8")
+        (domain / "model.py").write_text("VALUE = 1\n", encoding="utf-8")
+        (tmp_path / ".archignore").write_text("domain/model.py\n", encoding="utf-8")
+        selected = [RegexFactory.folder_matcher("**/api*")]
+
+        partial = extract_graph_for_sources(str(tmp_path), selected)
+        full = extract_graph(str(tmp_path))
+        assert partial == [edge for edge in full if matches_all_patterns(edge.source, selected)]
+        assert not any(
+            edge.target == _normalize(str(domain / "model.py")) and not edge.external
+            for edge in partial
+        )
 
     def test_edge_has_import_kinds(self):
         graph = extract_graph(SAMPLE_PROJECT)
