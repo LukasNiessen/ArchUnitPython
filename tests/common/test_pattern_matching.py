@@ -76,10 +76,13 @@ class TestRegexFactory:
         for pattern in patterns:
             original = re.compile(fnmatch.translate(pattern))
             filter_ = RegexFactory.path_matcher(pattern)
-            assert filter_.regexp.pattern == original.pattern
             optimized = filter_.search_regexp
             assert optimized is not None
             for path in paths:
+                assert bool(filter_.regexp.match(path)) == bool(original.match(path)), (
+                    pattern,
+                    path,
+                )
                 assert bool(optimized.search(path)) == bool(original.search(path)), (
                     pattern,
                     path,
