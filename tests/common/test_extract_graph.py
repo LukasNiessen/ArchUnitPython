@@ -376,6 +376,19 @@ class TestArchignore:
 
         assert relative_files == {"keep.py"}
 
+    def test_explicit_file_excludes_survive_default_directory_shortcut(self):
+        self._write("keep.py")
+        self._write("manual.py")
+        self._write("__pycache__/cached.py")
+
+        files = _find_python_files(
+            str(self._temp_dir), ["__pycache__", "manual.py"]
+        )
+        relative_files = {
+            Path(file_path).relative_to(self._temp_dir).as_posix() for file_path in files
+        }
+        assert relative_files == {"keep.py"}
+
     def test_archignore_ignored_files_are_not_dependency_targets(self):
         self._write(".archignore", "ignored.py\n")
         self._write("keep.py", "import ignored\n")

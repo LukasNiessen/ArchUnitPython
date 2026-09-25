@@ -278,6 +278,9 @@ def _find_python_files(root: str, exclude: list[str]) -> list[str]:
     """Recursively find all .py files, excluding specified patterns."""
     py_files: list[str] = []
     root = os.path.abspath(root)
+    # Defaults can only match directory names, never a .py filename. Keep
+    # checking user patterns against files, including .archignore entries.
+    file_excludes = [pattern for pattern in exclude if pattern not in _DEFAULT_EXCLUDE]
     for dirpath, dirnames, filenames in os.walk(root):
         # Filter out excluded directories in-place
         dirnames[:] = [
@@ -288,8 +291,9 @@ def _find_python_files(root: str, exclude: list[str]) -> list[str]:
 
         for filename in filenames:
             full_path = os.path.join(dirpath, filename)
-            if filename.endswith(".py") and not _should_exclude_path(
-                full_path, root, exclude, is_dir=False
+            if filename.endswith(".py") and not (
+                file_excludes
+                and _should_exclude_path(full_path, root, file_excludes, is_dir=False)
             ):
                 py_files.append(os.path.abspath(full_path))
 
