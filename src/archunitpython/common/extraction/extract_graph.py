@@ -5,10 +5,12 @@ from __future__ import annotations
 import ast
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from archunitpython.common.extraction.graph import Edge, Graph, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.pattern_matching import matches_all_patterns
+from archunitpython.common.types import Filter
 
 GraphCacheKey = tuple[str, tuple[str, ...], bool]
 
@@ -57,15 +59,28 @@ class _IgnoreDirective:
         if not self.modules:
             return True
         return any(
-            import_.module_name == module
-            or import_.module_name.startswith(f"{module}.")
+            import_.module_name == module or import_.module_name.startswith(f"{module}.")
             for module in self.modules
         )
+
+
+@dataclass
+class _ExtractionSession:
+    project_path: str
+    py_files: list[str]
+    normalized_py_file_set: set[str]
+    ignore_type_checking_imports: bool
+    edges_by_file: dict[str, list[Edge]] = field(default_factory=dict)
+    selected_files: dict[tuple[Filter, ...], list[str]] = field(default_factory=dict)
+
+
+_extraction_sessions: dict[GraphCacheKey, _ExtractionSession] = {}
 
 
 def clear_graph_cache(options: CheckOptions | None = None) -> None:
     """Clear the cached dependency graphs."""
     _graph_cache.clear()
+    _extraction_sessions.clear()
 
 
 def extract_graph(
@@ -99,17 +114,71 @@ def extract_graph(
 
     if options and options.clear_cache:
         _graph_cache.pop(cache_key, None)
+        _extraction_sessions.pop(cache_key, None)
 
     if cache_key in _graph_cache:
         return _graph_cache[cache_key]
 
-    result = _extract_graph_uncached(
-        project_path,
-        excludes,
-        ignore_type_checking_imports=ignore_type_checking_imports,
+    session = _get_extraction_session(
+        cache_key, project_path, excludes, ignore_type_checking_imports
     )
+    result = _extract_graph_from_files(session, session.py_files)
     _graph_cache[cache_key] = result
     return result
+
+
+def extract_graph_for_sources(
+    project_path: str | None,
+    source_filters: list[Filter],
+    *,
+    options: CheckOptions | None = None,
+) -> Graph:
+    """Extract edges from files selected by a direct file-dependency rule.
+
+    All project files are inventoried to classify imported targets correctly.
+    Parsed edges are reused by later rules and full-graph checks in this process.
+    """
+    if not source_filters:
+        return extract_graph(project_path, options=options)
+
+    if project_path is None:
+        project_path = os.getcwd()
+    project_path = os.path.abspath(project_path)
+    excludes = _resolve_exclude_patterns(project_path, None)
+    ignore_type_checking_imports = bool(options and options.ignore_type_checking_imports)
+    cache_key = _build_cache_key(project_path, excludes, ignore_type_checking_imports)
+    if options and options.clear_cache:
+        _graph_cache.pop(cache_key, None)
+        _extraction_sessions.pop(cache_key, None)
+
+    session = _get_extraction_session(
+        cache_key, project_path, excludes, ignore_type_checking_imports
+    )
+    filter_key = tuple(source_filters)
+    if filter_key not in session.selected_files:
+        session.selected_files[filter_key] = [
+            path for path in session.py_files if matches_all_patterns(path, source_filters)
+        ]
+    return _extract_graph_from_files(session, session.selected_files[filter_key])
+
+
+def _get_extraction_session(
+    cache_key: GraphCacheKey,
+    project_path: str,
+    excludes: list[str],
+    ignore_type_checking_imports: bool,
+) -> _ExtractionSession:
+    session = _extraction_sessions.get(cache_key)
+    if session is None:
+        py_files = _find_python_files(project_path, excludes)
+        session = _ExtractionSession(
+            project_path=project_path,
+            py_files=py_files,
+            normalized_py_file_set={_normalize(path) for path in py_files},
+            ignore_type_checking_imports=ignore_type_checking_imports,
+        )
+        _extraction_sessions[cache_key] = session
+    return session
 
 
 def _build_cache_key(
@@ -153,55 +222,51 @@ def _load_archignore_patterns(project_path: str) -> list[str]:
     return patterns
 
 
-def _extract_graph_uncached(
-    project_path: str,
-    exclude_patterns: list[str],
-    *,
-    ignore_type_checking_imports: bool = False,
-) -> Graph:
-    """Extract graph without caching."""
-    py_files = _find_python_files(project_path, exclude_patterns)
-
+def _extract_graph_from_files(session: _ExtractionSession, files: list[str]) -> Graph:
+    """Assemble a graph from cached or newly parsed file edges."""
     edges: list[Edge] = []
-    py_files_set = set(py_files)
-    normalized_py_file_set = {_normalize(f) for f in py_files_set}
-
-    for file_path in py_files:
-        # Add self-referencing edge (ensures the file appears as a node)
-        edges.append(
-            Edge(
-                source=_normalize(file_path),
-                target=_normalize(file_path),
-                external=False,
-            )
-        )
-
-        imports = _extract_located_imports(file_path)
-        for located_import in imports:
-            import_kind = located_import.import_kind
-            if (
-                ignore_type_checking_imports
-                and import_kind == ImportKind.TYPE_IMPORT
-            ):
-                continue
-            for resolved, is_external in _resolve_import_targets(
-                located_import, file_path, project_path
-            ):
-                if resolved and resolved != _normalize(file_path):
-                    # Check if the resolved path is in our project
-                    if not is_external and resolved not in normalized_py_file_set:
-                        continue
-
-                    edges.append(
-                        Edge(
-                            source=_normalize(file_path),
-                            target=resolved,
-                            external=is_external,
-                            import_kinds=_edge_import_kinds(located_import),
-                        )
-                    )
-
+    for file_path in files:
+        edges.extend(_extract_file_edges(session, file_path))
     return _merge_edges(edges)
+
+
+def _extract_file_edges(session: _ExtractionSession, file_path: str) -> list[Edge]:
+    cached = session.edges_by_file.get(file_path)
+    if cached is not None:
+        return cached
+
+    source_label = _normalize(file_path)
+    edges = [
+        Edge(
+            source=source_label,
+            target=source_label,
+            external=False,
+        )
+    ]
+
+    for located_import in _extract_located_imports(file_path):
+        if (
+            session.ignore_type_checking_imports
+            and located_import.import_kind == ImportKind.TYPE_IMPORT
+        ):
+            continue
+        for resolved, is_external in _resolve_import_targets(
+            located_import, file_path, session.project_path
+        ):
+            if resolved and resolved != source_label:
+                if not is_external and resolved not in session.normalized_py_file_set:
+                    continue
+                edges.append(
+                    Edge(
+                        source=source_label,
+                        target=resolved,
+                        external=is_external,
+                        import_kinds=_edge_import_kinds(located_import),
+                    )
+                )
+
+    session.edges_by_file[file_path] = edges
+    return edges
 
 
 def _normalize(path: str) -> str:
@@ -213,6 +278,9 @@ def _find_python_files(root: str, exclude: list[str]) -> list[str]:
     """Recursively find all .py files, excluding specified patterns."""
     py_files: list[str] = []
     root = os.path.abspath(root)
+    # Defaults can only match directory names, never a .py filename. Keep
+    # checking user patterns against files, including .archignore entries.
+    file_excludes = [pattern for pattern in exclude if pattern not in _DEFAULT_EXCLUDE]
     for dirpath, dirnames, filenames in os.walk(root):
         # Filter out excluded directories in-place
         dirnames[:] = [
@@ -223,8 +291,9 @@ def _find_python_files(root: str, exclude: list[str]) -> list[str]:
 
         for filename in filenames:
             full_path = os.path.join(dirpath, filename)
-            if filename.endswith(".py") and not _should_exclude_path(
-                full_path, root, exclude, is_dir=False
+            if filename.endswith(".py") and not (
+                file_excludes
+                and _should_exclude_path(full_path, root, file_excludes, is_dir=False)
             ):
                 py_files.append(os.path.abspath(full_path))
 
@@ -300,10 +369,11 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
 
     imports: list[_LocatedImport] = []
     ignore_directives = _find_ignore_directives(source)
-    type_checking_ranges = _find_type_checking_ranges(tree)
-    conditional_import_ranges = _find_conditional_import_ranges(tree)
+    nodes = list(ast.walk(tree))
+    type_checking_ranges = _find_type_checking_ranges(nodes)
+    conditional_import_ranges = _find_conditional_import_ranges(nodes)
 
-    for node in ast.walk(tree):
+    for node in nodes:
         if isinstance(node, ast.Import):
             syntax_kind = ImportKind.IMPORT
             kind = _classify_import(
@@ -313,9 +383,7 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                 conditional_import_ranges,
             )
             for alias in node.names:
-                imports.append(
-                    _LocatedImport(alias.name, kind, node.lineno, syntax_kind)
-                )
+                imports.append(_LocatedImport(alias.name, kind, node.lineno, syntax_kind))
 
         elif isinstance(node, ast.ImportFrom):
             syntax_kind = (
@@ -329,9 +397,7 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                 type_checking_ranges,
                 conditional_import_ranges,
             )
-            fallback_module_name = (
-                "." * node.level if node.level and node.module is None else None
-            )
+            fallback_module_name = "." * node.level if node.level and node.module is None else None
             aliases = _module_aliases(node) if node.module else ()
             for module_name in _import_from_module_names(node):
                 imports.append(
@@ -354,15 +420,9 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                 conditional_import_ranges,
             )
             for module_name in _extract_dynamic_import_names(node):
-                imports.append(
-                    _LocatedImport(module_name, kind, node.lineno, syntax_kind)
-                )
+                imports.append(_LocatedImport(module_name, kind, node.lineno, syntax_kind))
 
-    return [
-        import_
-        for import_ in imports
-        if not _is_ignored_import(import_, ignore_directives)
-    ]
+    return [import_ for import_ in imports if not _is_ignored_import(import_, ignore_directives)]
 
 
 def _find_ignore_directives(source: str) -> dict[int, _IgnoreDirective]:
@@ -463,11 +523,11 @@ def _classify_import(
     return default_kind
 
 
-def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
+def _find_type_checking_ranges(nodes: list[ast.AST]) -> list[tuple[int, int]]:
     """Find line ranges of TYPE_CHECKING blocks."""
     ranges: list[tuple[int, int]] = []
 
-    for node in ast.walk(tree):
+    for node in nodes:
         if isinstance(node, ast.If):
             # Check for `if TYPE_CHECKING:` pattern
             test = node.test
@@ -488,11 +548,11 @@ def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
     return sorted(ranges, key=lambda ele: ele[0])
 
 
-def _find_conditional_import_ranges(tree: ast.Module) -> list[tuple[int, int]]:
+def _find_conditional_import_ranges(nodes: list[ast.AST]) -> list[tuple[int, int]]:
     """Find try/except ImportError ranges that contain optional imports."""
     ranges: list[tuple[int, int]] = []
 
-    for node in ast.walk(tree):
+    for node in nodes:
         if not isinstance(node, ast.Try):
             continue
         if not any(_handles_import_error(handler.type) for handler in node.handlers):
@@ -555,14 +615,10 @@ def _resolve_import(
     Returns (resolved_path, is_external).
     The path is normalized with forward slashes.
     """
-    if (
-        kind
-        in (
-            ImportKind.RELATIVE_IMPORT,
-            ImportKind.TYPE_IMPORT,
-        )
-        and import_name.startswith(".")
-    ):
+    if kind in (
+        ImportKind.RELATIVE_IMPORT,
+        ImportKind.TYPE_IMPORT,
+    ) and import_name.startswith("."):
         # Relative import
         return _resolve_relative_import(import_name, source_file, project_root)
 

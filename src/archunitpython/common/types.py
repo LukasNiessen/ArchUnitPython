@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, Union
 
 Pattern = Union[str, re.Pattern[str]]
@@ -27,3 +27,4 @@ class Filter:
 
     regexp: re.Pattern[str]
     options: PatternMatchingOptions
+    search_regexp: re.Pattern[str] | None = field(default=None, compare=False, repr=False)

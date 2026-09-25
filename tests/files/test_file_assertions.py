@@ -87,6 +87,34 @@ class TestDependOnFiles:
         violations = gather_depend_on_file_violations(edges, subject, obj, is_negated=True)
         assert len(violations) == 0
 
+    def test_repeated_labels_preserve_rule_semantics_and_order(self):
+        edges = [
+            _edge("src/ui/view.py", "src/db/database.py"),
+            _edge("src/ui/view.py", "src/services/service.py"),
+            _edge("src/ui/other.py", "src/db/database.py"),
+            _edge("src/other/file.py", "src/db/database.py"),
+        ]
+        subject = [
+            RegexFactory.folder_matcher("src/ui*"),
+            RegexFactory.filename_matcher("*.py"),
+        ]
+        obj = [RegexFactory.folder_matcher("src/db*")]
+
+        forbidden = gather_depend_on_file_violations(edges, subject, obj, is_negated=True)
+        required = gather_depend_on_file_violations(edges, subject, obj, is_negated=False)
+
+        assert [violation.dependency for violation in forbidden] == [edges[0], edges[2]]
+        assert [violation.dependency for violation in required] == [edges[1]]
+
+    def test_match_results_do_not_leak_to_later_checks(self):
+        edges = [_edge("src/ui/view.py", "src/db/database.py")]
+        subject = [RegexFactory.folder_matcher("src/ui*")]
+        db_target = [RegexFactory.folder_matcher("src/db*")]
+        service_target = [RegexFactory.folder_matcher("src/services*")]
+
+        assert len(gather_depend_on_file_violations(edges, subject, db_target, True)) == 1
+        assert gather_depend_on_file_violations(edges, subject, service_target, True) == []
+
 
 class TestCycleFree:
     def test_no_cycles_no_violations(self):

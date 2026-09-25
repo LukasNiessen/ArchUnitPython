@@ -1,5 +1,6 @@
 """Tests for graph extraction."""
 
+import importlib
 import os
 import shutil
 from pathlib import Path
@@ -14,9 +15,12 @@ from archunitpython.common.extraction.extract_graph import (
     _resolve_exclude_patterns,
     clear_graph_cache,
     extract_graph,
+    extract_graph_for_sources,
 )
 from archunitpython.common.extraction.graph import Edge, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.pattern_matching import matches_all_patterns
+from archunitpython.common.regex_factory import RegexFactory
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fixtures")
 SAMPLE_PROJECT = os.path.join(FIXTURES_DIR, "sample_project")
@@ -185,6 +189,146 @@ class TestExtractGraph:
         graph2 = extract_graph(SAMPLE_PROJECT, options=CheckOptions(clear_cache=True))
         assert graph1 is not graph2  # Different objects after cache clear
 
+    def test_partial_then_full_graph_preserves_all_edges(self):
+        service_filter = [RegexFactory.folder_matcher("**/services*")]
+        partial = extract_graph_for_sources(SAMPLE_PROJECT, service_filter)
+        full = extract_graph(SAMPLE_PROJECT)
+
+        assert partial == [
+            edge for edge in full if matches_all_patterns(edge.source, service_filter)
+        ]
+        assert any("/models/" in edge.source for edge in full)
+
+    def test_full_then_partial_graph_preserves_selected_edges(self):
+        full = extract_graph(SAMPLE_PROJECT)
+        service_filter = [RegexFactory.folder_matcher("**/services*")]
+        partial = extract_graph_for_sources(SAMPLE_PROJECT, service_filter)
+
+        assert partial == [
+            edge for edge in full if matches_all_patterns(edge.source, service_filter)
+        ]
+
+    def test_multiple_source_filters_select_only_matching_files(self):
+        filters = [
+            RegexFactory.folder_matcher("**/services*"),
+            RegexFactory.filename_matcher("service_b.py"),
+        ]
+        partial = extract_graph_for_sources(SAMPLE_PROJECT, filters)
+        full = extract_graph(SAMPLE_PROJECT)
+
+        assert partial == [edge for edge in full if matches_all_patterns(edge.source, filters)]
+        assert partial
+        assert {Path(edge.source).name for edge in partial} == {"service_b.py"}
+
+    def test_no_source_filters_reuses_full_graph(self):
+        full = extract_graph(SAMPLE_PROJECT)
+        assert extract_graph_for_sources(SAMPLE_PROJECT, []) is full
+
+    def test_partial_graph_refreshes_after_cache_clear(self, tmp_path):
+        api = tmp_path / "api"
+        api.mkdir()
+        source = api / "endpoint.py"
+        source.write_text("import infrastructure\n", encoding="utf-8")
+        selected = [RegexFactory.folder_matcher("**/api*")]
+
+        before = extract_graph_for_sources(str(tmp_path), selected)
+        assert any(edge.external and edge.target == "infrastructure" for edge in before)
+
+        infrastructure = tmp_path / "infrastructure.py"
+        infrastructure.write_text("VALUE = 1\n", encoding="utf-8")
+        after = extract_graph_for_sources(
+            str(tmp_path), selected, options=CheckOptions(clear_cache=True)
+        )
+        assert any(
+            not edge.external and edge.target == _normalize(str(infrastructure)) for edge in after
+        )
+
+    def test_selective_graph_preserves_namespace_and_import_kinds(self, tmp_path):
+        api = tmp_path / "api"
+        domain = tmp_path / "domain"
+        api.mkdir()
+        domain.mkdir()
+        (domain / "model.py").write_text("VALUE = 1\n", encoding="utf-8")
+        (domain / "types.py").write_text("VALUE = 2\n", encoding="utf-8")
+        (domain / "optional.py").write_text("VALUE = 3\n", encoding="utf-8")
+        (api / "consumer.py").write_text(
+            "\n".join(
+                [
+                    "from typing import TYPE_CHECKING",
+                    "from domain import model",
+                    "if TYPE_CHECKING:",
+                    "    from domain import types",
+                    "try:",
+                    "    from domain import optional",
+                    "except ImportError:",
+                    "    pass",
+                    "import importlib",
+                    'importlib.import_module("domain.model")',
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        selected = [RegexFactory.folder_matcher("**/api*")]
+
+        partial = extract_graph_for_sources(str(tmp_path), selected)
+        full = extract_graph(str(tmp_path))
+        assert partial == [edge for edge in full if matches_all_patterns(edge.source, selected)]
+        assert any(
+            edge.target.endswith("/domain/model.py") and not edge.external for edge in partial
+        )
+        assert any(edge.target.endswith("/domain/types.py") for edge in partial)
+        assert any(edge.target.endswith("/domain/optional.py") for edge in partial)
+        model_edges = [edge for edge in partial if edge.target.endswith("/domain/model.py")]
+        assert len(model_edges) == 1
+        assert set(model_edges[0].import_kinds) == {
+            ImportKind.FROM_IMPORT,
+            ImportKind.DYNAMIC_IMPORT,
+        }
+        optional_edges = [
+            edge for edge in partial if edge.target.endswith("/domain/optional.py")
+        ]
+        assert ImportKind.CONDITIONAL_IMPORT in optional_edges[0].import_kinds
+
+        ignore_types = CheckOptions(ignore_type_checking_imports=True)
+        partial_without_types = extract_graph_for_sources(
+            str(tmp_path), selected, options=ignore_types
+        )
+        full_without_types = extract_graph(str(tmp_path), options=ignore_types)
+        assert partial_without_types == [
+            edge for edge in full_without_types if matches_all_patterns(edge.source, selected)
+        ]
+        assert not any(edge.target.endswith("/domain/types.py") for edge in partial_without_types)
+
+    def test_no_selected_sources_do_not_parse_imports(self, monkeypatch):
+        def unexpected_parse(_path):
+            raise AssertionError("Unselected files must not be parsed")
+
+        extraction = importlib.import_module("archunitpython.common.extraction.extract_graph")
+        monkeypatch.setattr(extraction, "_extract_located_imports", unexpected_parse)
+        graph = extract_graph_for_sources(
+            SAMPLE_PROJECT, [RegexFactory.folder_matcher("**/not_present*")]
+        )
+        assert graph == []
+
+    def test_selective_graph_respects_archignore_for_targets(self, tmp_path):
+        api = tmp_path / "api"
+        domain = tmp_path / "domain"
+        api.mkdir()
+        domain.mkdir()
+        (api / "consumer.py").write_text("from domain import model\n", encoding="utf-8")
+        (domain / "model.py").write_text("VALUE = 1\n", encoding="utf-8")
+        (tmp_path / ".archignore").write_text("domain/model.py\n", encoding="utf-8")
+        selected = [RegexFactory.folder_matcher("**/api*")]
+
+        partial = extract_graph_for_sources(str(tmp_path), selected)
+        full = extract_graph(str(tmp_path))
+        assert partial == [edge for edge in full if matches_all_patterns(edge.source, selected)]
+        assert not any(
+            edge.target == _normalize(str(domain / "model.py")) and not edge.external
+            for edge in partial
+        )
+
     def test_edge_has_import_kinds(self):
         graph = extract_graph(SAMPLE_PROJECT)
         edges_with_kinds = [e for e in graph if len(e.import_kinds) > 0]
@@ -227,10 +371,22 @@ class TestArchignore:
         excludes = _resolve_exclude_patterns(str(self._temp_dir), ["__pycache__"])
         files = _find_python_files(str(self._temp_dir), excludes)
         relative_files = {
-            Path(file_path).relative_to(self._temp_dir).as_posix()
-            for file_path in files
+            Path(file_path).relative_to(self._temp_dir).as_posix() for file_path in files
         }
 
+        assert relative_files == {"keep.py"}
+
+    def test_explicit_file_excludes_survive_default_directory_shortcut(self):
+        self._write("keep.py")
+        self._write("manual.py")
+        self._write("__pycache__/cached.py")
+
+        files = _find_python_files(
+            str(self._temp_dir), ["__pycache__", "manual.py"]
+        )
+        relative_files = {
+            Path(file_path).relative_to(self._temp_dir).as_posix() for file_path in files
+        }
         assert relative_files == {"keep.py"}
 
     def test_archignore_ignored_files_are_not_dependency_targets(self):
@@ -396,9 +552,7 @@ class TestDynamicImportGraphHandling:
         ).replace("\\", "/")
 
         edges = [
-            edge
-            for edge in graph
-            if edge.source == loader_path and edge.target == models_path
+            edge for edge in graph if edge.source == loader_path and edge.target == models_path
         ]
         assert len(edges) == 1
         assert ImportKind.DYNAMIC_IMPORT in edges[0].import_kinds
@@ -446,9 +600,7 @@ class TestNamespacePackageGraphHandling:
         service_path = os.path.abspath(
             os.path.join(project_root, "namespace_pkg", "services", "service.py")
         ).replace("\\", "/")
-        return [
-            edge for edge in graph if edge.source == service_path and edge.target == model_path
-        ]
+        return [edge for edge in graph if edge.source == service_path and edge.target == model_path]
 
     def _service_edges(self, project_root: str) -> list[Edge]:
         graph = extract_graph(project_root)
@@ -456,15 +608,11 @@ class TestNamespacePackageGraphHandling:
             os.path.join(project_root, "namespace_pkg", "services", "service.py")
         ).replace("\\", "/")
         return [
-            edge
-            for edge in graph
-            if edge.source == service_path and edge.target != service_path
+            edge for edge in graph if edge.source == service_path and edge.target != service_path
         ]
 
     def test_absolute_from_import_resolves_namespace_package_submodule(self):
-        project_root = self._build_namespace_project(
-            "from namespace_pkg.domain import model\n"
-        )
+        project_root = self._build_namespace_project("from namespace_pkg.domain import model\n")
 
         edges = self._service_to_model_edges(project_root)
 
@@ -493,8 +641,7 @@ class TestNamespacePackageGraphHandling:
 
         assert any(edge.target == model_path and not edge.external for edge in edges)
         assert any(
-            edge.target == "namespace_pkg.domain.remote_model" and edge.external
-            for edge in edges
+            edge.target == "namespace_pkg.domain.remote_model" and edge.external for edge in edges
         )
 
     def test_multiple_internal_aliases_resolve_to_each_submodule(self):
@@ -516,9 +663,7 @@ class TestNamespacePackageGraphHandling:
         assert internal_targets == expected_targets
 
     def test_all_external_aliases_keep_original_base_edge(self):
-        project_root = self._build_namespace_project(
-            "from vendor_sdk import Client, Config\n"
-        )
+        project_root = self._build_namespace_project("from vendor_sdk import Client, Config\n")
 
         external_targets = {
             edge.target for edge in self._service_edges(project_root) if edge.external
@@ -534,9 +679,7 @@ class TestNamespacePackageGraphHandling:
         assert len(self._service_to_model_edges(project_root)) == 1
 
     def test_relative_mixed_aliases_preserve_unresolved_edge(self):
-        project_root = self._build_namespace_project(
-            "from ..domain import model, remote_model\n"
-        )
+        project_root = self._build_namespace_project("from ..domain import model, remote_model\n")
 
         edges = self._service_edges(project_root)
         unresolved_path = os.path.abspath(
@@ -544,14 +687,10 @@ class TestNamespacePackageGraphHandling:
         ).replace("\\", "/")
 
         assert len(self._service_to_model_edges(project_root)) == 1
-        assert any(
-            edge.target == unresolved_path and edge.external for edge in edges
-        )
+        assert any(edge.target == unresolved_path and edge.external for edge in edges)
 
     def test_archignore_suppresses_resolved_namespace_target(self):
-        project_root = self._build_namespace_project(
-            "from namespace_pkg.domain import model\n"
-        )
+        project_root = self._build_namespace_project("from namespace_pkg.domain import model\n")
         Path(project_root, ".archignore").write_text(
             "namespace_pkg/domain/model.py\n",
             encoding="utf-8",
@@ -625,18 +764,16 @@ class TestConditionalImportGraphHandling:
             os.path.join(project_root, "sample_project", "service.py")
         ).replace("\\", "/")
         target_paths = {
-            os.path.abspath(
-                os.path.join(project_root, "sample_project", "fast_model.py")
-            ).replace("\\", "/"),
+            os.path.abspath(os.path.join(project_root, "sample_project", "fast_model.py")).replace(
+                "\\", "/"
+            ),
             os.path.abspath(
                 os.path.join(project_root, "sample_project", "fallback_model.py")
             ).replace("\\", "/"),
         }
 
         edges = [
-            edge
-            for edge in graph
-            if edge.source == service_path and edge.target in target_paths
+            edge for edge in graph if edge.source == service_path and edge.target in target_paths
         ]
 
         assert len(edges) == 2
@@ -672,9 +809,7 @@ class TestConditionalImportGraphHandling:
 
         edges = self._conditional_edges(project_root)
         target_paths = {
-            os.path.abspath(
-                os.path.join(project_root, "sample_project", module)
-            ).replace("\\", "/")
+            os.path.abspath(os.path.join(project_root, "sample_project", module)).replace("\\", "/")
             for module in ("fast_model.py", "fallback_model.py")
         }
 
@@ -698,9 +833,7 @@ class TestConditionalImportGraphHandling:
 
         edges = self._conditional_edges(project_root)
         target_paths = {
-            os.path.abspath(
-                os.path.join(project_root, "sample_project", module)
-            ).replace("\\", "/")
+            os.path.abspath(os.path.join(project_root, "sample_project", module)).replace("\\", "/")
             for module in ("fast_model.py", "fallback_model.py")
         }
 
@@ -751,9 +884,7 @@ class TestConditionalImportGraphHandling:
 
         edges = self._conditional_edges(project_root)
         target_paths = {
-            os.path.abspath(
-                os.path.join(project_root, "sample_project", target)
-            ).replace("\\", "/")
+            os.path.abspath(os.path.join(project_root, "sample_project", target)).replace("\\", "/")
             for target in ("fast_model.py", "__init__.py")
         }
 
@@ -779,9 +910,7 @@ class TestConditionalImportGraphHandling:
 
         edges = self._conditional_edges(project_root)
         target_paths = {
-            os.path.abspath(
-                os.path.join(project_root, "sample_project", module)
-            ).replace("\\", "/")
+            os.path.abspath(os.path.join(project_root, "sample_project", module)).replace("\\", "/")
             for module in ("fast_model.py", "fallback_model.py")
         }
 
@@ -842,9 +971,7 @@ class TestConditionalImportGraphHandling:
 
         assert len(edges) == 2
         assert all(ImportKind.FROM_IMPORT in edge.import_kinds for edge in edges)
-        assert all(
-            ImportKind.CONDITIONAL_IMPORT not in edge.import_kinds for edge in edges
-        )
+        assert all(ImportKind.CONDITIONAL_IMPORT not in edge.import_kinds for edge in edges)
 
     def test_conditional_dynamic_import_retains_dynamic_kind(self):
         project_root = self._build_conditional_project(
@@ -866,10 +993,7 @@ class TestConditionalImportGraphHandling:
         ]
 
         assert len(internal_edges) == 2
-        assert all(
-            ImportKind.CONDITIONAL_IMPORT in edge.import_kinds
-            for edge in internal_edges
-        )
+        assert all(ImportKind.CONDITIONAL_IMPORT in edge.import_kinds for edge in internal_edges)
         assert all(ImportKind.DYNAMIC_IMPORT in edge.import_kinds for edge in internal_edges)
 
     def test_type_checking_import_takes_precedence_over_conditional_context(self):
@@ -903,8 +1027,7 @@ class TestConditionalImportGraphHandling:
             ),
         )
         assert not any(
-            edge.source.endswith("/service.py")
-            and edge.target.endswith("/fast_model.py")
+            edge.source.endswith("/service.py") and edge.target.endswith("/fast_model.py")
             for edge in ignored_graph
         )
 
@@ -945,9 +1068,7 @@ class TestIgnoreDirectives:
             os.path.join(project_root, "sample_project", "service.py")
         ).replace("\\", "/")
         return [
-            edge
-            for edge in graph
-            if edge.source == service_path and edge.target == models_path
+            edge for edge in graph if edge.source == service_path and edge.target == models_path
         ]
 
     def test_inline_ignore_directive_removes_import_edge(self):
