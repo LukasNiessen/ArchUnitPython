@@ -365,10 +365,11 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
 
     imports: list[_LocatedImport] = []
     ignore_directives = _find_ignore_directives(source)
-    type_checking_ranges = _find_type_checking_ranges(tree)
-    conditional_import_ranges = _find_conditional_import_ranges(tree)
+    nodes = list(ast.walk(tree))
+    type_checking_ranges = _find_type_checking_ranges(nodes)
+    conditional_import_ranges = _find_conditional_import_ranges(nodes)
 
-    for node in ast.walk(tree):
+    for node in nodes:
         if isinstance(node, ast.Import):
             syntax_kind = ImportKind.IMPORT
             kind = _classify_import(
@@ -518,11 +519,11 @@ def _classify_import(
     return default_kind
 
 
-def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
+def _find_type_checking_ranges(nodes: list[ast.AST]) -> list[tuple[int, int]]:
     """Find line ranges of TYPE_CHECKING blocks."""
     ranges: list[tuple[int, int]] = []
 
-    for node in ast.walk(tree):
+    for node in nodes:
         if isinstance(node, ast.If):
             # Check for `if TYPE_CHECKING:` pattern
             test = node.test
@@ -543,11 +544,11 @@ def _find_type_checking_ranges(tree: ast.Module) -> list[tuple[int, int]]:
     return sorted(ranges, key=lambda ele: ele[0])
 
 
-def _find_conditional_import_ranges(tree: ast.Module) -> list[tuple[int, int]]:
+def _find_conditional_import_ranges(nodes: list[ast.AST]) -> list[tuple[int, int]]:
     """Find try/except ImportError ranges that contain optional imports."""
     ranges: list[tuple[int, int]] = []
 
-    for node in ast.walk(tree):
+    for node in nodes:
         if not isinstance(node, ast.Try):
             continue
         if not any(_handles_import_error(handler.type) for handler in node.handlers):
