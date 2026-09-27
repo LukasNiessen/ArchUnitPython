@@ -5,7 +5,10 @@ from __future__ import annotations
 import ast
 import os
 import re
+from collections import deque
+from collections.abc import Iterator
 from dataclasses import dataclass, field
+from itertools import islice
 
 from archunitpython.common.extraction.graph import Edge, Graph, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions
@@ -38,6 +41,11 @@ _IGNORE_DIRECTIVE_REGEX = re.compile(
     r"(?:\([^)]*\))?"
     r"(?P<modules>(?:\s+[\w.]+)*)\s*$"
 )
+
+_IMPORT_ANALYSIS_NODE_TYPES = (ast.Import, ast.ImportFrom, ast.Call, ast.If, ast.Try)
+_IMPORT_LEAF_NODE_TYPES = frozenset((ast.Import, ast.ImportFrom, ast.Name, ast.Constant))
+_PARALLEL_EXTRACTION_MIN_FILES = 64
+_PARALLEL_EXTRACTION_WORKERS = 8
 
 
 @dataclass(frozen=True)
@@ -225,12 +233,56 @@ def _load_archignore_patterns(project_path: str) -> list[str]:
 def _extract_graph_from_files(session: _ExtractionSession, files: list[str]) -> Graph:
     """Assemble a graph from cached or newly parsed file edges."""
     edges: list[Edge] = []
-    for file_path in files:
-        edges.extend(_extract_file_edges(session, file_path))
+    for file_edges in _iter_file_edges(session, files):
+        edges.extend(file_edges)
     return _merge_edges(edges)
 
 
-def _extract_file_edges(session: _ExtractionSession, file_path: str) -> list[Edge]:
+def _iter_file_edges(session: _ExtractionSession, files: list[str]) -> Iterator[list[Edge]]:
+    """Overlap independent source reads while assembling edges in original order.
+
+    Small/cached selections remain serial. The pending window is bounded, and
+    only the calling thread resolves targets or mutates the extraction session.
+    """
+    uncached_count = sum(path not in session.edges_by_file for path in files)
+    if uncached_count < _PARALLEL_EXTRACTION_MIN_FILES:
+        for path in files:
+            yield _extract_file_edges(session, path)
+        return
+
+    # Avoid importing executor machinery for small or already cached checks.
+    from concurrent.futures import Future, ThreadPoolExecutor
+
+    paths = iter(files)
+    with ThreadPoolExecutor(max_workers=_PARALLEL_EXTRACTION_WORKERS) as executor:
+        pending: deque[tuple[str, Future[list[_LocatedImport]] | None]] = deque()
+
+        def schedule(path: str) -> tuple[str, Future[list[_LocatedImport]] | None]:
+            future = (
+                None
+                if path in session.edges_by_file
+                else executor.submit(_extract_located_imports, path)
+            )
+            return path, future
+
+        for path in islice(paths, _PARALLEL_EXTRACTION_WORKERS):
+            pending.append(schedule(path))
+
+        while pending:
+            path, future = pending.popleft()
+            imports = future.result() if future is not None else None
+            next_path = next(paths, None)
+            if next_path is not None:
+                pending.append(schedule(next_path))
+            yield _extract_file_edges(session, path, located_imports=imports)
+
+
+def _extract_file_edges(
+    session: _ExtractionSession,
+    file_path: str,
+    *,
+    located_imports: list[_LocatedImport] | None = None,
+) -> list[Edge]:
     cached = session.edges_by_file.get(file_path)
     if cached is not None:
         return cached
@@ -244,7 +296,9 @@ def _extract_file_edges(session: _ExtractionSession, file_path: str) -> list[Edg
         )
     ]
 
-    for located_import in _extract_located_imports(file_path):
+    if located_imports is None:
+        located_imports = _extract_located_imports(file_path)
+    for located_import in located_imports:
         if (
             session.ignore_type_checking_imports
             and located_import.import_kind == ImportKind.TYPE_IMPORT
@@ -369,7 +423,7 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
 
     imports: list[_LocatedImport] = []
     ignore_directives = _find_ignore_directives(source)
-    nodes = list(ast.walk(tree))
+    nodes = _import_analysis_nodes(tree)
     type_checking_ranges = _find_type_checking_ranges(nodes)
     conditional_import_ranges = _find_conditional_import_ranges(nodes)
 
@@ -423,6 +477,23 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                 imports.append(_LocatedImport(module_name, kind, node.lineno, syntax_kind))
 
     return [import_ for import_ in imports if not _is_ignored_import(import_, ignore_directives)]
+
+
+def _import_analysis_nodes(tree: ast.AST) -> list[ast.AST]:
+    """Collect import/context nodes in ast.walk order without visiting inert leaves.
+
+    Unknown node types still use the standard child iterator, so new syntax is
+    not silently skipped. Only parser-produced terminal types are pruned.
+    """
+    pending = deque([tree])
+    nodes: list[ast.AST] = []
+    while pending:
+        node = pending.popleft()
+        if isinstance(node, _IMPORT_ANALYSIS_NODE_TYPES):
+            nodes.append(node)
+        if node._fields and type(node) not in _IMPORT_LEAF_NODE_TYPES:
+            pending.extend(ast.iter_child_nodes(node))
+    return nodes
 
 
 def _find_ignore_directives(source: str) -> dict[int, _IgnoreDirective]:
