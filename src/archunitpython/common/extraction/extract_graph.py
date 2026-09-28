@@ -811,15 +811,17 @@ def _resolve_absolute_import(
             candidate_file = candidate_base + ".py"
             if os.path.isfile(candidate_file):
                 resolved = _normalize(os.path.abspath(candidate_file))
-                # Only count as internal if it's inside the project root
-                is_internal = resolved.startswith(_normalize(os.path.abspath(project_root)))
+                # A sibling such as /repo/app2 must not match /repo/app.
+                project_prefix = _normalize(os.path.abspath(project_root)).rstrip("/") + "/"
+                is_internal = resolved.startswith(project_prefix)
                 return resolved, not is_internal
 
             # Try as a package
             candidate_init = os.path.join(candidate_base, "__init__.py")
             if os.path.isfile(candidate_init):
                 resolved = _normalize(os.path.abspath(candidate_init))
-                is_internal = resolved.startswith(_normalize(os.path.abspath(project_root)))
+                project_prefix = _normalize(os.path.abspath(project_root)).rstrip("/") + "/"
+                is_internal = resolved.startswith(project_prefix)
                 return resolved, not is_internal
 
     # Not found in project → external

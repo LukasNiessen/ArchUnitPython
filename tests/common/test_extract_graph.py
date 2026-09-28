@@ -64,6 +64,30 @@ def test_import_analysis_nodes_traverse_unknown_node_types():
     assert [type(node) for node in _import_analysis_nodes(tree)] == [ast.Import, ast.Call]
 
 
+@pytest.mark.parametrize("sibling_kind", ["module", "package"])
+def test_sibling_with_shared_path_prefix_remains_external(tmp_path, sibling_kind):
+    project = tmp_path / "app"
+    project.mkdir()
+    source = project / "service.py"
+    source.write_text("import app2\n", encoding="utf-8")
+    if sibling_kind == "module":
+        sibling_target = tmp_path / "app2.py"
+    else:
+        sibling = tmp_path / "app2"
+        sibling.mkdir()
+        sibling_target = sibling / "__init__.py"
+    sibling_target.write_text("", encoding="utf-8")
+
+    graph = extract_graph(str(project), options=CheckOptions(clear_cache=True))
+
+    assert any(
+        edge.source == _normalize(str(source))
+        and edge.target == _normalize(str(sibling_target))
+        and edge.external
+        for edge in graph
+    )
+
+
 def test_parallel_extraction_preserves_graph_and_calling_thread_resolution(monkeypatch):
     extraction = importlib.import_module("archunitpython.common.extraction.extract_graph")
     clear_graph_cache()
