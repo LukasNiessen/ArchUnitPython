@@ -88,6 +88,73 @@ def test_sibling_with_shared_path_prefix_remains_external(tmp_path, sibling_kind
     )
 
 
+def test_repeated_absolute_import_reuses_resolution_until_cache_clear(tmp_path, monkeypatch):
+    extraction = importlib.import_module("archunitpython.common.extraction.extract_graph")
+    target = tmp_path / "dependency.py"
+    target.write_text("", encoding="utf-8")
+    for source_name in ("a.py", "b.py"):
+        (tmp_path / source_name).write_text("import dependency\n", encoding="utf-8")
+
+    original_isfile = os.path.isfile
+    target_probes = 0
+
+    def counted_isfile(path):
+        nonlocal target_probes
+        if _normalize(str(path)) == _normalize(str(target)):
+            target_probes += 1
+        return original_isfile(path)
+
+    monkeypatch.setattr(extraction.os.path, "isfile", counted_isfile)
+    graph = extract_graph(str(tmp_path), options=CheckOptions(clear_cache=True))
+    dependency_edges = [
+        edge
+        for edge in graph
+        if edge.target == _normalize(str(target)) and edge.source != edge.target
+    ]
+    assert len(dependency_edges) == 2
+    assert all(not edge.external for edge in dependency_edges)
+    assert target_probes == 1
+
+    extract_graph(str(tmp_path), options=CheckOptions(clear_cache=True))
+    assert target_probes == 2
+
+
+def test_absolute_resolution_cache_refreshes_when_target_appears(tmp_path):
+    source = tmp_path / "service.py"
+    source.write_text("import dependency\n", encoding="utf-8")
+
+    before = extract_graph(str(tmp_path), options=CheckOptions(clear_cache=True))
+    assert any(edge.target == "dependency" and edge.external for edge in before)
+
+    target = tmp_path / "dependency.py"
+    target.write_text("", encoding="utf-8")
+    after = extract_graph(str(tmp_path), options=CheckOptions(clear_cache=True))
+    assert any(
+        edge.target == _normalize(str(target)) and not edge.external for edge in after
+    )
+
+
+def test_relative_resolution_is_source_specific_with_session_cache(tmp_path):
+    expected_targets = set()
+    for package_name in ("first", "second"):
+        package = tmp_path / package_name
+        package.mkdir()
+        (package / "service.py").write_text("from . import dependency\n", encoding="utf-8")
+        target = package / "dependency.py"
+        target.write_text("", encoding="utf-8")
+        expected_targets.add(_normalize(str(target)))
+
+    graph = extract_graph(str(tmp_path), options=CheckOptions(clear_cache=True))
+    actual_targets = {
+        edge.target
+        for edge in graph
+        if edge.source.endswith("/service.py")
+        and edge.source != edge.target
+        and not edge.external
+    }
+    assert actual_targets == expected_targets
+
+
 def test_parallel_extraction_preserves_graph_and_calling_thread_resolution(monkeypatch):
     extraction = importlib.import_module("archunitpython.common.extraction.extract_graph")
     clear_graph_cache()
@@ -105,9 +172,9 @@ def test_parallel_extraction_preserves_graph_and_calling_thread_resolution(monke
             worker_threads.add(get_ident())
         return original_extract(path)
 
-    def resolve(*args):
+    def resolve(*args, **kwargs):
         assert get_ident() == main_thread
-        return original_resolve(*args)
+        return original_resolve(*args, **kwargs)
 
     monkeypatch.setattr(extraction, "_extract_located_imports", extract)
     monkeypatch.setattr(extraction, "_resolve_import_targets", resolve)
@@ -171,7 +238,9 @@ def test_parallel_extraction_keeps_file_order_when_later_file_finishes_first(mon
 
     monkeypatch.setattr(extraction, "_extract_located_imports", extract)
     monkeypatch.setattr(
-        extraction, "_resolve_import_targets", lambda import_, *_: [(import_.module_name, True)]
+        extraction,
+        "_resolve_import_targets",
+        lambda import_, *_, **__: [(import_.module_name, True)],
     )
     graph = extraction._extract_graph_from_files(session, files)
     assert [(edge.source, edge.target) for edge in graph] == [

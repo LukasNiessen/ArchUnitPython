@@ -80,6 +80,7 @@ class _ExtractionSession:
     ignore_type_checking_imports: bool
     edges_by_file: dict[str, list[Edge]] = field(default_factory=dict)
     selected_files: dict[tuple[Filter, ...], list[str]] = field(default_factory=dict)
+    absolute_resolutions: dict[str, tuple[str, bool]] = field(default_factory=dict)
 
 
 _extraction_sessions: dict[GraphCacheKey, _ExtractionSession] = {}
@@ -305,7 +306,10 @@ def _extract_file_edges(
         ):
             continue
         for resolved, is_external in _resolve_import_targets(
-            located_import, file_path, session.project_path
+            located_import,
+            file_path,
+            session.project_path,
+            absolute_resolutions=session.absolute_resolutions,
         ):
             if resolved and resolved != source_label:
                 if not is_external and resolved not in session.normalized_py_file_set:
@@ -680,6 +684,7 @@ def _resolve_import(
     source_file: str,
     project_root: str,
     kind: ImportKind,
+    absolute_resolutions: dict[str, tuple[str, bool]] | None = None,
 ) -> tuple[str, bool]:
     """Resolve an import name to an absolute file path.
 
@@ -693,14 +698,23 @@ def _resolve_import(
         # Relative import
         return _resolve_relative_import(import_name, source_file, project_root)
 
-    # Absolute import: try to resolve within the project
-    return _resolve_absolute_import(import_name, project_root)
+    # Absolute targets are independent of the source file within this session.
+    if absolute_resolutions is not None:
+        cached = absolute_resolutions.get(import_name)
+        if cached is not None:
+            return cached
+    resolved = _resolve_absolute_import(import_name, project_root)
+    if absolute_resolutions is not None:
+        absolute_resolutions[import_name] = resolved
+    return resolved
 
 
 def _resolve_import_targets(
     import_: _LocatedImport,
     source_file: str,
     project_root: str,
+    *,
+    absolute_resolutions: dict[str, tuple[str, bool]] | None = None,
 ) -> list[tuple[str, bool]]:
     """Resolve an import, including namespace-package submodule aliases."""
     resolution_kind = import_.resolution_kind or import_.import_kind
@@ -709,6 +723,7 @@ def _resolve_import_targets(
         source_file,
         project_root,
         resolution_kind,
+        absolute_resolutions,
     )
     if is_external and import_.fallback_module_name is not None:
         fallback, fallback_is_external = _resolve_import(
@@ -716,6 +731,7 @@ def _resolve_import_targets(
             source_file,
             project_root,
             resolution_kind,
+            absolute_resolutions,
         )
         if fallback and not fallback_is_external:
             resolved, is_external = fallback, False
@@ -731,6 +747,7 @@ def _resolve_import_targets(
             source_file,
             project_root,
             resolution_kind,
+            absolute_resolutions,
         )
         alias_targets.append((alias_resolved, alias_is_external))
         found_internal_alias = found_internal_alias or not alias_is_external
