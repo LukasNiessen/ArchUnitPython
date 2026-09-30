@@ -8,6 +8,7 @@ from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 from typing import TextIO
+from uuid import uuid4
 
 from archunitpython.common.logging.types import LoggingOptions
 
@@ -55,7 +56,11 @@ class InspectionSession:
                         Path(self.options.log_path)
                         if self.options.log_path
                         else Path("logs")
-                        / datetime.now().strftime("archunit-%Y-%m-%d_%H-%M-%S-%f.log")
+                        / (
+                            datetime.now().strftime("archunit-%Y-%m-%d_%H-%M-%S-")
+                            + uuid4().hex
+                            + ".log"
+                        )
                     )
                     path.parent.mkdir(parents=True, exist_ok=True)
                     self._file = path.open(

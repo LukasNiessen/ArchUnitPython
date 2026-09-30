@@ -53,8 +53,8 @@ def inspect_check(check: F) -> F:
                     "_name",
                     "_zone_type",
                 ):
-                    if hasattr(self, name):
-                        session.emit("debug", "%s: %s", name.removeprefix("_"), getattr(self, name))
+                    if session.options.level == "debug" and name in vars(self):
+                        session.emit("debug", "%s: %s", name.removeprefix("_"), vars(self)[name])
             violations = check(self, options)
             if session:
                 session.emit(

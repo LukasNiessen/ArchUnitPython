@@ -13,7 +13,7 @@ from typing import Any, Callable
 from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
 from archunitpython.common.fluentapi.inspection import inspect_check
-from archunitpython.common.logging.inspection import debug
+from archunitpython.common.logging.inspection import debug, debug_enabled
 from archunitpython.common.pattern_matching import matches_pattern_classname
 from archunitpython.common.regex_factory import RegexFactory
 from archunitpython.common.types import Filter, Pattern
@@ -97,6 +97,20 @@ class MetricsBuilder:
         return CustomMetricsBuilder(
             self._project_path, list(self._filters), name, description, calculation
         )
+
+
+def _log_metric_value(
+    metric: Any, subject: str, value: float, threshold: float, comparison: MetricComparison
+) -> None:
+    if not debug_enabled():
+        return
+    try:
+        name = metric.name
+    except Exception:
+        name = type(metric).__name__
+    debug(
+        "Metric %s for %s: value=%s; threshold=%s (%s)", name, subject, value, threshold, comparison
+    )
 
 
 def _get_filtered_classes(project_path: str | None, filters: list[Filter]) -> list[ClassInfo]:
@@ -196,9 +210,8 @@ class ClassMetricCondition(RuleRationaleMixin):
 
         for cls in classes:
             value = self._metric.calculate(cls)
-            debug(
-                "Metric %s for %s: value=%s; threshold=%s (%s)",
-                self._metric.name,
+            _log_metric_value(
+                self._metric,
                 cls.name,
                 value,
                 self._threshold,
@@ -280,9 +293,8 @@ class FileMetricCondition(RuleRationaleMixin):
                 continue
 
             value = self._metric.calculate_from_file(file_path)
-            debug(
-                "Metric %s for %s: value=%s; threshold=%s (%s)",
-                self._metric.name,
+            _log_metric_value(
+                self._metric,
                 file_path,
                 value,
                 self._threshold,

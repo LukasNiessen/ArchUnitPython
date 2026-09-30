@@ -2,7 +2,6 @@
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 from threading import Barrier
 
 import pytest
@@ -211,3 +210,35 @@ def test_debug_does_not_render_objects_at_info_level():
             return []
 
     assert Rule().check(CheckOptions(logging=LoggingOptions(enabled=True, console=False))) == []
+
+
+def test_inspection_does_not_read_rule_properties(caplog):
+    class Rule:
+        @property
+        def _filters(self):
+            raise AssertionError("inspection must not invoke descriptors")
+
+        @inspect_check
+        def check(self, options=None):
+            return []
+
+    with caplog.at_level(logging.DEBUG, logger="archunitpython"):
+        assert Rule().check(CheckOptions(logging=LoggingOptions(enabled=True, level="debug"))) == []
+
+
+def test_passing_metric_does_not_gain_a_name_requirement(project, caplog):
+    from archunitpython.metrics.fluentapi.metrics import ClassMetricCondition
+
+    class Metric:
+        @property
+        def name(self):
+            raise RuntimeError("name unavailable")
+
+        def calculate(self, cls):
+            return 0.0
+
+    rule = ClassMetricCondition(project, [], Metric(), 1, "below")
+    assert rule.check() == []
+    with caplog.at_level(logging.DEBUG, logger="archunitpython"):
+        assert rule.check(CheckOptions(logging=LoggingOptions(enabled=True, level="debug"))) == []
+    assert "Metric Metric for Storage" in caplog.text
