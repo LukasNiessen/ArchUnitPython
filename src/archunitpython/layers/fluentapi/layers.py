@@ -5,6 +5,7 @@ from __future__ import annotations
 from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.extraction.extract_graph import extract_graph
 from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.fluentapi.inspection import inspect_check
 from archunitpython.common.projection.edge_projections import per_internal_edge
 from archunitpython.common.projection.project_edges import project_edges
 from archunitpython.common.regex_factory import RegexFactory
@@ -42,6 +43,7 @@ class LayeredArchitecture:
         self._layers.setdefault(name, [])
         return LayerDependencyRuleBuilder(self, name)
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         graph = extract_graph(self._project_path, options=options)
         edges = project_edges(graph, per_internal_edge())

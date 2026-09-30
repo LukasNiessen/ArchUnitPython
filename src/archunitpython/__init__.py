@@ -7,6 +7,7 @@ __version__ = "1.7.0"
 from archunitpython.common import (
     CheckOptions,
     EmptyTestViolation,
+    LoggingOptions,
     TechnicalError,
     UserError,
     Violation,
@@ -50,6 +51,7 @@ __all__ = [
     "Violation",
     "EmptyTestViolation",
     "CheckOptions",
+    "LoggingOptions",
     "TechnicalError",
     "UserError",
     "extract_graph",

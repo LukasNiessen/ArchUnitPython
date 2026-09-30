@@ -8,7 +8,9 @@ import sys
 
 def _supports_color() -> bool:
     """Check if the terminal supports ANSI colors."""
-    if os.environ.get("NO_COLOR"):
+    if "NO_COLOR" in os.environ or os.environ.get("CI", "").lower() == "true":
+        return False
+    if os.environ.get("TERM") == "dumb":
         return False
     if not hasattr(sys.stdout, "isatty"):
         return False
@@ -23,6 +25,15 @@ def _wrap(code: str, text: str) -> str:
 
 class ColorUtils:
     """ANSI color utilities for terminal output."""
+
+    @staticmethod
+    def style(text: str, code: str, enabled: bool | None = None) -> str:
+        """Style text with automatic detection or an explicit color choice."""
+        if enabled is False or "NO_COLOR" in os.environ:
+            return text
+        if enabled is None and not _supports_color():
+            return text
+        return f"\033[{code}m{text}\033[0m"
 
     @staticmethod
     def red(text: str) -> str:
