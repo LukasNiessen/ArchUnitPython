@@ -16,3 +16,5 @@ class LoggingOptions:
     level: LogLevel = "info"
     log_file: bool = False
     append_to_log_file: bool = False
+    console: bool = True
+    log_path: str | None = None

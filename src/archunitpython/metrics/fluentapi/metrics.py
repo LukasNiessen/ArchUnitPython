@@ -12,6 +12,8 @@ from typing import Any, Callable
 
 from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
+from archunitpython.common.fluentapi.inspection import inspect_check
+from archunitpython.common.logging.inspection import debug, debug_enabled
 from archunitpython.common.pattern_matching import matches_pattern_classname
 from archunitpython.common.regex_factory import RegexFactory
 from archunitpython.common.types import Filter, Pattern
@@ -95,6 +97,20 @@ class MetricsBuilder:
         return CustomMetricsBuilder(
             self._project_path, list(self._filters), name, description, calculation
         )
+
+
+def _log_metric_value(
+    metric: Any, subject: str, value: float, threshold: float, comparison: MetricComparison
+) -> None:
+    if not debug_enabled():
+        return
+    try:
+        name = metric.name
+    except Exception:
+        name = type(metric).__name__
+    debug(
+        "Metric %s for %s: value=%s; threshold=%s (%s)", name, subject, value, threshold, comparison
+    )
 
 
 def _get_filtered_classes(project_path: str | None, filters: list[Filter]) -> list[ClassInfo]:
@@ -187,12 +203,20 @@ class ClassMetricCondition(RuleRationaleMixin):
         self._threshold = threshold
         self._comparison = comparison
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         classes = _get_filtered_classes(self._project_path, self._filters)
         violations: list[Violation] = []
 
         for cls in classes:
             value = self._metric.calculate(cls)
+            _log_metric_value(
+                self._metric,
+                cls.name,
+                value,
+                self._threshold,
+                self._comparison,
+            )
             if check_threshold(value, self._threshold, self._comparison):
                 violations.append(
                     MetricViolation(
@@ -247,6 +271,7 @@ class FileMetricCondition(RuleRationaleMixin):
         self._threshold = threshold
         self._comparison: MetricComparison = comparison
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         import os
 
@@ -268,6 +293,13 @@ class FileMetricCondition(RuleRationaleMixin):
                 continue
 
             value = self._metric.calculate_from_file(file_path)
+            _log_metric_value(
+                self._metric,
+                file_path,
+                value,
+                self._threshold,
+                self._comparison,
+            )
             if check_threshold(value, self._threshold, self._comparison):
                 violations.append(
                     FileCountViolation(
@@ -381,6 +413,7 @@ class DistanceCondition(RuleRationaleMixin):
         self._threshold = threshold
         self._comparison: MetricComparison = comparison
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         files = extract_enhanced_class_info(self._project_path)
         violations: list[Violation] = []
@@ -388,6 +421,14 @@ class DistanceCondition(RuleRationaleMixin):
         for file_result in files:
             dm = calculate_file_distance_metrics(file_result, files)
             value = getattr(dm, self._metric_attr)
+            debug(
+                "Metric %s for %s: value=%s; threshold=%s (%s)",
+                self._metric_attr,
+                file_result.file_path,
+                value,
+                self._threshold,
+                self._comparison,
+            )
 
             if check_threshold(value, self._threshold, self._comparison):
                 violations.append(
@@ -412,6 +453,7 @@ class ZoneCondition(RuleRationaleMixin):
         self._filters = filters
         self._zone_type = zone_type
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         files = extract_enhanced_class_info(self._project_path)
         violations: list[Violation] = []
@@ -420,6 +462,7 @@ class ZoneCondition(RuleRationaleMixin):
             dm = calculate_file_distance_metrics(file_result, files)
             in_zone = dm.in_zone_of_pain if self._zone_type == "pain" else dm.in_zone_of_uselessness
 
+            debug("Zone %s for %s: in_zone=%s", self._zone_type, file_result.file_path, in_zone)
             if in_zone:
                 violations.append(
                     MetricViolation(
@@ -504,12 +547,14 @@ class CustomMetricCondition(RuleRationaleMixin):
         self._threshold = threshold
         self._comparison = comparison
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         classes = _get_filtered_classes(self._project_path, self._filters)
         violations: list[Violation] = []
 
         for cls in classes:
             value = self._calculation(cls)
+            debug("Custom metric %s for %s: value=%s", self._name, cls.name, value)
             if check_threshold(value, self._threshold, self._comparison):
                 violations.append(
                     MetricViolation(
@@ -542,12 +587,14 @@ class CustomAssertionCondition(RuleRationaleMixin):
         self._calculation = calculation
         self._assertion = assertion
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         classes = _get_filtered_classes(self._project_path, self._filters)
         violations: list[Violation] = []
 
         for cls in classes:
             value = self._calculation(cls)
+            debug("Custom metric %s for %s: value=%s", self._name, cls.name, value)
             if not self._assertion(value, cls):
                 violations.append(
                     MetricViolation(

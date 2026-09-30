@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from archunitpython.common.assertion.violation import EmptyTestViolation, Violation
 from archunitpython.common.extraction.extract_graph import extract_graph
 from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
+from archunitpython.common.fluentapi.inspection import inspect_check
 from archunitpython.common.pattern_matching import matches_all_patterns
 from archunitpython.common.projection.edge_projections import (
     per_external_edge,
@@ -329,6 +330,7 @@ class CycleFreeFileCondition(RuleRationaleMixin):
         self._project_path = project_path
         self._filters = filters
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         graph = extract_graph(self._project_path, options=options)
         edges = project_edges(graph, per_internal_edge())
@@ -365,6 +367,7 @@ class DependOnFileCondition(RuleRationaleMixin):
         self._object_filters = object_filters
         self._is_negated = is_negated
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         graph = extract_graph(self._project_path, options=options)
         edges = project_edges(graph, per_internal_edge())
@@ -397,6 +400,7 @@ class DependOnExternalModuleCondition(RuleRationaleMixin):
         self._module_filters.append(RegexFactory.path_matcher(module_name))
         return self
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         graph = extract_graph(self._project_path, options=options)
         edges = project_edges(graph, per_external_edge())
@@ -424,6 +428,7 @@ class MatchPatternFileCondition(RuleRationaleMixin):
         self._check_filters = check_filters
         self._is_negated = is_negated
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         nodes = _get_filtered_nodes(self._project_path, self._pre_filters, options)
 
@@ -451,6 +456,7 @@ class CustomFileCheckableCondition(RuleRationaleMixin):
         self._message = message
         self._is_negated = is_negated
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         graph = extract_graph(self._project_path, options=options)
         nodes = project_to_nodes(graph)

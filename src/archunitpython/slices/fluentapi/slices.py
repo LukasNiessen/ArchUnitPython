@@ -15,6 +15,7 @@ import re
 from archunitpython.common.assertion.violation import Violation
 from archunitpython.common.extraction.extract_graph import extract_graph
 from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
+from archunitpython.common.fluentapi.inspection import inspect_check
 from archunitpython.common.projection.project_edges import project_edges
 from archunitpython.common.projection.types import MapFunction
 from archunitpython.slices.assertion.admissible_edges import (
@@ -157,6 +158,7 @@ class PositiveSliceCondition(RuleRationaleMixin):
         self._puml_content = puml_content
         self._coherence_options = coherence_options
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         graph = extract_graph(self._project_path, options=options)
         rules, contained_nodes = generate_rule(self._puml_content)
@@ -193,6 +195,7 @@ class NegativeSliceCondition(RuleRationaleMixin):
         self._source = source
         self._target = target
 
+    @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
         graph = extract_graph(self._project_path, options=options)
 

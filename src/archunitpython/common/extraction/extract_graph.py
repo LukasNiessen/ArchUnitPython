@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from archunitpython.common.extraction.graph import Edge, Graph, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.logging.inspection import debug, debug_enabled
 
 GraphCacheKey = tuple[str, tuple[str, ...], bool]
 
@@ -57,8 +58,7 @@ class _IgnoreDirective:
         if not self.modules:
             return True
         return any(
-            import_.module_name == module
-            or import_.module_name.startswith(f"{module}.")
+            import_.module_name == module or import_.module_name.startswith(f"{module}.")
             for module in self.modules
         )
 
@@ -97,19 +97,44 @@ def extract_graph(
     ignore_type_checking_imports = bool(options and options.ignore_type_checking_imports)
     cache_key = _build_cache_key(project_path, excludes, ignore_type_checking_imports)
 
+    debug(
+        "Extraction root: %s; excludes: %s; ignore type-only imports: %s",
+        project_path,
+        excludes,
+        ignore_type_checking_imports,
+    )
     if options and options.clear_cache:
+        debug("Clearing graph cache for %s", project_path)
         _graph_cache.pop(cache_key, None)
 
     if cache_key in _graph_cache:
+        debug("Graph cache hit: %d edges", len(_graph_cache[cache_key]))
+        _inspect_graph(_graph_cache[cache_key])
         return _graph_cache[cache_key]
+    debug("Graph cache miss")
 
     result = _extract_graph_uncached(
         project_path,
         excludes,
         ignore_type_checking_imports=ignore_type_checking_imports,
     )
+    _inspect_graph(result)
     _graph_cache[cache_key] = result
     return result
+
+
+def _inspect_graph(graph: Graph) -> None:
+    if not debug_enabled():
+        return
+    debug("Extracted graph: %d edges (including self-edges)", len(graph))
+    for edge in graph:
+        debug(
+            "Dependency: %s -> %s; external=%s; kinds=%s",
+            edge.source,
+            edge.target,
+            edge.external,
+            edge.import_kinds,
+        )
 
 
 def _build_cache_key(
@@ -167,6 +192,7 @@ def _extract_graph_uncached(
     normalized_py_file_set = {_normalize(f) for f in py_files_set}
 
     for file_path in py_files:
+        debug("Processing file: %s", file_path)
         # Add self-referencing edge (ensures the file appears as a node)
         edges.append(
             Edge(
@@ -179,10 +205,13 @@ def _extract_graph_uncached(
         imports = _extract_located_imports(file_path)
         for located_import in imports:
             import_kind = located_import.import_kind
-            if (
-                ignore_type_checking_imports
-                and import_kind == ImportKind.TYPE_IMPORT
-            ):
+            if ignore_type_checking_imports and import_kind == ImportKind.TYPE_IMPORT:
+                debug(
+                    "Skipped type-only import: %s:%s -> %s",
+                    file_path,
+                    located_import.line_number,
+                    located_import.module_name,
+                )
                 continue
             for resolved, is_external in _resolve_import_targets(
                 located_import, file_path, project_path
@@ -190,6 +219,7 @@ def _extract_graph_uncached(
                 if resolved and resolved != _normalize(file_path):
                     # Check if the resolved path is in our project
                     if not is_external and resolved not in normalized_py_file_set:
+                        debug("Skipped excluded dependency: %s -> %s", file_path, resolved)
                         continue
 
                     edges.append(
@@ -227,6 +257,7 @@ def _find_python_files(root: str, exclude: list[str]) -> list[str]:
                 full_path, root, exclude, is_dir=False
             ):
                 py_files.append(os.path.abspath(full_path))
+                debug("Discovered file: %s", full_path)
 
     return py_files
 
@@ -313,9 +344,7 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                 conditional_import_ranges,
             )
             for alias in node.names:
-                imports.append(
-                    _LocatedImport(alias.name, kind, node.lineno, syntax_kind)
-                )
+                imports.append(_LocatedImport(alias.name, kind, node.lineno, syntax_kind))
 
         elif isinstance(node, ast.ImportFrom):
             syntax_kind = (
@@ -329,9 +358,7 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                 type_checking_ranges,
                 conditional_import_ranges,
             )
-            fallback_module_name = (
-                "." * node.level if node.level and node.module is None else None
-            )
+            fallback_module_name = "." * node.level if node.level and node.module is None else None
             aliases = _module_aliases(node) if node.module else ()
             for module_name in _import_from_module_names(node):
                 imports.append(
@@ -354,15 +381,9 @@ def _extract_located_imports(file_path: str) -> list[_LocatedImport]:
                 conditional_import_ranges,
             )
             for module_name in _extract_dynamic_import_names(node):
-                imports.append(
-                    _LocatedImport(module_name, kind, node.lineno, syntax_kind)
-                )
+                imports.append(_LocatedImport(module_name, kind, node.lineno, syntax_kind))
 
-    return [
-        import_
-        for import_ in imports
-        if not _is_ignored_import(import_, ignore_directives)
-    ]
+    return [import_ for import_ in imports if not _is_ignored_import(import_, ignore_directives)]
 
 
 def _find_ignore_directives(source: str) -> dict[int, _IgnoreDirective]:
@@ -555,14 +576,10 @@ def _resolve_import(
     Returns (resolved_path, is_external).
     The path is normalized with forward slashes.
     """
-    if (
-        kind
-        in (
-            ImportKind.RELATIVE_IMPORT,
-            ImportKind.TYPE_IMPORT,
-        )
-        and import_name.startswith(".")
-    ):
+    if kind in (
+        ImportKind.RELATIVE_IMPORT,
+        ImportKind.TYPE_IMPORT,
+    ) and import_name.startswith("."):
         # Relative import
         return _resolve_relative_import(import_name, source_file, project_root)
 
