@@ -27,6 +27,13 @@ _Inspired by the amazing ArchUnit library but we are not affiliated with ArchUni
 pip install archunitpython
 ```
 
+> **Choose the import root:** Pass the directory containing your top-level Python
+> packages to `project_files(...)` and `metrics(...)`. If `import taskboard` refers
+> to `src/taskboard/`, use `"src"`; if `taskboard/` is at the repository root, use
+> `"."`. This tells ArchUnitPython where to scan and how to resolve your imports.
+> Omitting the argument uses the current working directory; it does not
+> automatically discover a `src/` layout. [Details and examples](#choosing-the-import-root).
+
 ### Add tests
 
 Simply add tests to your existing test suites. The following is an example using pytest. First we ensure that we have no circular dependencies.
@@ -35,7 +42,7 @@ Simply add tests to your existing test suites. The following is an example using
 from archunitpython import project_files, metrics, assert_passes
 
 def test_no_circular_dependencies():
-    rule = project_files("src/").in_folder("src/**").should().have_no_cycles()
+    rule = project_files("src/").should().have_no_cycles()
     assert_passes(rule)
 ```
 
@@ -113,6 +120,64 @@ pip install archunitpython
 ```
 
 That's it. Works with **pytest**, **unittest**, or any Python testing framework.
+
+### Choosing the import root
+
+The optional `project_path` argument to `project_files(...)`, `metrics(...)`,
+`project_layers(...)`, `project_slices(...)`, and `project_graph(...)` selects the
+directory to analyze. Choose the directory containing your top-level Python
+packages so absolute imports can be resolved within that directory. Relative
+paths are interpreted from the current working directory; omitting the argument
+uses that working directory.
+
+For example, suppose your repository contains:
+
+```text
+my_repo/
+  src/
+    taskboard/
+      __init__.py
+      application/board_service.py
+      domain/task.py
+  tests/test_architecture.py
+```
+
+An import such as `from taskboard.domain.task import Task` names
+`taskboard/domain/task.py` underneath `src/`. It does not include `src` in the
+import name. Run your tests from `my_repo/` and use:
+
+```python
+from archunitpython import assert_passes, metrics, project_files
+
+def test_no_cycles():
+    rule = project_files("src").should().have_no_cycles()
+    assert_passes(rule)
+
+def test_no_large_files():
+    rule = metrics("src").count().lines_of_code().should_be_below(1000)
+    assert_passes(rule)
+```
+
+The directory name itself has no special meaning:
+
+| Package location, relative to your working directory | Import name | Argument |
+| --- | --- | --- |
+| `src/taskboard/` | `taskboard` | `"src"` |
+| `taskboard/` | `taskboard` | `"."` |
+| `backend/taskboard/` | `taskboard` | `"backend"` |
+
+Selectors such as `.in_path("**/domain/**")` and `.in_folder(...)` narrow which
+files a rule checks. They do not change the import root. For example,
+`project_files().in_path("src/**")` can select files under `src/` while still
+resolving absolute imports from the repository root. Set `project_files("src")`
+first, then add selectors if you need to narrow the rule.
+
+With the wrong root, imports between your own modules can be classified as
+external, causing cycle and internal-dependency rules to miss violations and
+dependency-based metrics to report incorrect values. The root also determines
+which files are included in metric measurements. ArchUnitPython does not infer a
+`src/` import root from `pyproject.toml` or your Python environment; pass it
+explicitly for this layout.
 
 ### pytest (Recommended)
 
