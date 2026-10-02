@@ -114,6 +114,12 @@ pip install archunitpython
 
 That's it. Works with **pytest**, **unittest**, or any Python testing framework.
 
+## 🎬 Demo
+
+https://github.com/user-attachments/assets/56f2ad65-a2e1-4965-b84d-445cf7bf4cd2
+
+## Testung Framework
+
 ### pytest (Recommended)
 
 Use `assert_passes()` for clean assertion messages:
