@@ -118,7 +118,7 @@ That's it. Works with **pytest**, **unittest**, or any Python testing framework.
 
 https://github.com/user-attachments/assets/56f2ad65-a2e1-4965-b84d-445cf7bf4cd2
 
-## Testung Framework
+## Testing Framework
 
 ### pytest (Recommended)
 
