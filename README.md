@@ -179,6 +179,12 @@ which files are included in metric measurements. ArchUnitPython does not infer a
 `src/` import root from `pyproject.toml` or your Python environment; pass it
 explicitly for this layout.
 
+## 🎬 Demo
+
+https://github.com/user-attachments/assets/56f2ad65-a2e1-4965-b84d-445cf7bf4cd2
+
+## Testing Framework
+
 ### pytest (Recommended)
 
 Use `assert_passes()` for clean assertion messages:
