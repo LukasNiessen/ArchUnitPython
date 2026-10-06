@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 
 from archunitpython.common.extraction.graph import Edge, Graph, ImportKind
 from archunitpython.common.fluentapi.checkable import CheckOptions
+from archunitpython.common.logging.inspection import debug, debug_enabled
 from archunitpython.common.pattern_matching import matches_all_patterns
 from archunitpython.common.types import Filter
 
@@ -112,17 +113,28 @@ def extract_graph(
     ignore_type_checking_imports = bool(options and options.ignore_type_checking_imports)
     cache_key = _build_cache_key(project_path, excludes, ignore_type_checking_imports)
 
+    debug(
+        "Extraction root: %s; excludes: %s; ignore type-only imports: %s",
+        project_path,
+        excludes,
+        ignore_type_checking_imports,
+    )
     if options and options.clear_cache:
+        debug("Clearing graph and extraction-session caches for %s", project_path)
         _graph_cache.pop(cache_key, None)
         _extraction_sessions.pop(cache_key, None)
 
     if cache_key in _graph_cache:
+        debug("Graph cache hit: %d edges", len(_graph_cache[cache_key]))
+        _inspect_graph(_graph_cache[cache_key])
         return _graph_cache[cache_key]
+    debug("Graph cache miss")
 
     session = _get_extraction_session(
         cache_key, project_path, excludes, ignore_type_checking_imports
     )
     result = _extract_graph_from_files(session, session.py_files)
+    _inspect_graph(result)
     _graph_cache[cache_key] = result
     return result
 
@@ -147,7 +159,14 @@ def extract_graph_for_sources(
     excludes = _resolve_exclude_patterns(project_path, None)
     ignore_type_checking_imports = bool(options and options.ignore_type_checking_imports)
     cache_key = _build_cache_key(project_path, excludes, ignore_type_checking_imports)
+    debug(
+        "Extraction root: %s; excludes: %s; ignore type-only imports: %s",
+        project_path,
+        excludes,
+        ignore_type_checking_imports,
+    )
     if options and options.clear_cache:
+        debug("Clearing graph and extraction-session caches for %s", project_path)
         _graph_cache.pop(cache_key, None)
         _extraction_sessions.pop(cache_key, None)
 
@@ -159,7 +178,28 @@ def extract_graph_for_sources(
         session.selected_files[filter_key] = [
             path for path in session.py_files if matches_all_patterns(path, source_filters)
         ]
-    return _extract_graph_from_files(session, session.selected_files[filter_key])
+    selected_files = session.selected_files[filter_key]
+    if debug_enabled():
+        debug(
+            "Selected-source extraction: %d of %d files", len(selected_files), len(session.py_files)
+        )
+        if selected_files:
+            cached_files = sum(path in session.edges_by_file for path in selected_files)
+            if cached_files == len(selected_files):
+                cache_status = "hit"
+            elif cached_files:
+                cache_status = "partial hit"
+            else:
+                cache_status = "miss"
+            debug(
+                "Selected-source edge cache %s: %d/%d files cached",
+                cache_status,
+                cached_files,
+                len(selected_files),
+            )
+    result = _extract_graph_from_files(session, selected_files)
+    _inspect_graph(result)
+    return result
 
 
 def _get_extraction_session(
@@ -179,6 +219,20 @@ def _get_extraction_session(
         )
         _extraction_sessions[cache_key] = session
     return session
+
+
+def _inspect_graph(graph: Graph) -> None:
+    if not debug_enabled():
+        return
+    debug("Extracted graph: %d edges (including self-edges)", len(graph))
+    for edge in graph:
+        debug(
+            "Dependency: %s -> %s; external=%s; kinds=%s",
+            edge.source,
+            edge.target,
+            edge.external,
+            edge.import_kinds,
+        )
 
 
 def _build_cache_key(
@@ -235,6 +289,7 @@ def _extract_file_edges(session: _ExtractionSession, file_path: str) -> list[Edg
     if cached is not None:
         return cached
 
+    debug("Processing file: %s", file_path)
     source_label = _normalize(file_path)
     edges = [
         Edge(
@@ -249,12 +304,19 @@ def _extract_file_edges(session: _ExtractionSession, file_path: str) -> list[Edg
             session.ignore_type_checking_imports
             and located_import.import_kind == ImportKind.TYPE_IMPORT
         ):
+            debug(
+                "Skipped type-only import: %s:%s -> %s",
+                file_path,
+                located_import.line_number,
+                located_import.module_name,
+            )
             continue
         for resolved, is_external in _resolve_import_targets(
             located_import, file_path, session.project_path
         ):
             if resolved and resolved != source_label:
                 if not is_external and resolved not in session.normalized_py_file_set:
+                    debug("Skipped excluded dependency: %s -> %s", file_path, resolved)
                     continue
                 edges.append(
                     Edge(
@@ -292,10 +354,10 @@ def _find_python_files(root: str, exclude: list[str]) -> list[str]:
         for filename in filenames:
             full_path = os.path.join(dirpath, filename)
             if filename.endswith(".py") and not (
-                file_excludes
-                and _should_exclude_path(full_path, root, file_excludes, is_dir=False)
+                file_excludes and _should_exclude_path(full_path, root, file_excludes, is_dir=False)
             ):
                 py_files.append(os.path.abspath(full_path))
+                debug("Discovered file: %s", full_path)
 
     return py_files
 

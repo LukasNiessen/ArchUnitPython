@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.7.0...v1.8.0) (2026-09-30)
+
+
+### Features
+
+* add detailed per-check inspection and styled reports ([#65](https://github.com/LukasNiessen/ArchUnitPython/issues/65)) ([ab0f9ef](https://github.com/LukasNiessen/ArchUnitPython/commit/ab0f9efb71c90712366490121e82c09b112a5d06))
+
 # [1.7.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.6.1...v1.7.0) (2026-09-13)
 
 

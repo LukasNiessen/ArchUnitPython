@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from archunitpython.common.logging.inspection import debug
 from archunitpython.common.types import Filter
 
 
@@ -48,7 +49,9 @@ def matches_pattern(file_path: str, filter_: Filter) -> bool:
         target_string = normalize_path(file_path)
 
     regexp = filter_.search_regexp or filter_.regexp
-    return bool(regexp.search(target_string))
+    matched = bool(regexp.search(target_string))
+    debug("Selector %s against %s (%s): %s", filter_.regexp.pattern, target_string, target, matched)
+    return matched
 
 
 def matches_pattern_classname(class_name: str, file_path: str, filter_: Filter) -> bool:
@@ -67,7 +70,9 @@ def matches_pattern_classname(class_name: str, file_path: str, filter_: Filter) 
         target_string = normalize_path(file_path)
 
     regexp = filter_.search_regexp or filter_.regexp
-    return bool(regexp.search(target_string))
+    matched = bool(regexp.search(target_string))
+    debug("Selector %s against %s (%s): %s", filter_.regexp.pattern, target_string, target, matched)
+    return matched
 
 
 def matches_all_patterns(file_path: str, filters: list[Filter]) -> bool:

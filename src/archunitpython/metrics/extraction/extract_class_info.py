@@ -9,6 +9,7 @@ from archunitpython.common.extraction.extract_graph import (
     _find_python_files,
     _resolve_exclude_patterns,
 )
+from archunitpython.common.logging.inspection import debug
 from archunitpython.metrics.common.types import (
     ClassInfo,
     EnhancedClassInfo,
@@ -41,6 +42,7 @@ def extract_class_info(
 
     classes: list[ClassInfo] = []
     for file_path in py_files:
+        debug("Analyzing classes in: %s", file_path)
         classes.extend(_process_source_file(file_path))
 
     return classes
@@ -61,6 +63,7 @@ def extract_enhanced_class_info(
 
     results: list[FileAnalysisResult] = []
     for file_path in py_files:
+        debug("Analyzing classes in: %s", file_path)
         result = _process_source_file_enhanced(file_path)
         if result.classes:
             results.append(result)
@@ -88,6 +91,13 @@ def _process_source_file(file_path: str) -> list[ClassInfo]:
         if isinstance(node, ast.ClassDef):
             class_info = _extract_class(node, norm_path)
             classes.append(class_info)
+            debug(
+                "Class: %s in %s; %d methods; %d fields",
+                class_info.name,
+                norm_path,
+                len(class_info.methods),
+                len(class_info.fields),
+            )
 
     return classes
 
@@ -112,6 +122,13 @@ def _process_source_file_enhanced(file_path: str) -> FileAnalysisResult:
         if isinstance(node, ast.ClassDef):
             enhanced = _extract_enhanced_class(node, norm_path)
             result.classes.append(enhanced)
+            debug(
+                "Enhanced class: %s in %s; abstract=%s; protocol=%s",
+                enhanced.name,
+                norm_path,
+                enhanced.is_abstract,
+                enhanced.is_protocol,
+            )
             result.total_types += 1
             if enhanced.is_protocol:
                 result.protocols += 1

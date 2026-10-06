@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 from archunitpython.common.extraction.graph import Edge
+from archunitpython.common.logging.inspection import debug
 from archunitpython.common.projection.types import MapFunction, ProjectedEdge
 
 
@@ -29,11 +30,19 @@ def project_edges(
     for edge in graph:
         mapped = mapper(edge)
         if mapped is None:
+            debug("Projection omitted: %s -> %s", edge.source, edge.target)
             continue
+        debug(
+            "Projection: %s -> %s becomes %s -> %s",
+            edge.source,
+            edge.target,
+            mapped.source_label,
+            mapped.target_label,
+        )
         key = (mapped.source_label, mapped.target_label)
         groups[key].append(edge)
 
-    return [
+    projected = [
         ProjectedEdge(
             source_label=source_label,
             target_label=target_label,
@@ -41,3 +50,5 @@ def project_edges(
         )
         for (source_label, target_label), edges in groups.items()
     ]
+    debug("Projection complete: %d raw edges -> %d projected edges", len(graph), len(projected))
+    return projected

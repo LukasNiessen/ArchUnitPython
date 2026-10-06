@@ -1,12 +1,13 @@
 """ArchUnitPython - Architecture testing library for Python projects."""
 
-__version__ = "1.7.0"
+__version__ = "1.8.0"
 
 # Files API
 # Common
 from archunitpython.common import (
     CheckOptions,
     EmptyTestViolation,
+    LoggingOptions,
     TechnicalError,
     UserError,
     Violation,
@@ -50,6 +51,7 @@ __all__ = [
     "Violation",
     "EmptyTestViolation",
     "CheckOptions",
+    "LoggingOptions",
     "TechnicalError",
     "UserError",
     "extract_graph",

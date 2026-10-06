@@ -27,6 +27,13 @@ _Inspired by the amazing ArchUnit library but we are not affiliated with ArchUni
 pip install archunitpython
 ```
 
+> **Choose the import root:** Pass the directory containing your top-level Python
+> packages to `project_files(...)` and `metrics(...)`. If `import taskboard` refers
+> to `src/taskboard/`, use `"src"`; if `taskboard/` is at the repository root, use
+> `"."`. This tells ArchUnitPython where to scan and how to resolve your imports.
+> Omitting the argument uses the current working directory; it does not
+> automatically discover a `src/` layout. [Details and examples](#choosing-the-import-root).
+
 ### Add tests
 
 Simply add tests to your existing test suites. The following is an example using pytest. First we ensure that we have no circular dependencies.
@@ -35,7 +42,7 @@ Simply add tests to your existing test suites. The following is an example using
 from archunitpython import project_files, metrics, assert_passes
 
 def test_no_circular_dependencies():
-    rule = project_files("src/").in_folder("src/**").should().have_no_cycles()
+    rule = project_files("src/").should().have_no_cycles()
     assert_passes(rule)
 ```
 
@@ -113,6 +120,70 @@ pip install archunitpython
 ```
 
 That's it. Works with **pytest**, **unittest**, or any Python testing framework.
+
+### Choosing the import root
+
+The optional `project_path` argument to `project_files(...)`, `metrics(...)`,
+`project_layers(...)`, `project_slices(...)`, and `project_graph(...)` selects the
+directory to analyze. Choose the directory containing your top-level Python
+packages so absolute imports can be resolved within that directory. Relative
+paths are interpreted from the current working directory; omitting the argument
+uses that working directory.
+
+For example, suppose your repository contains:
+
+```text
+my_repo/
+  src/
+    taskboard/
+      __init__.py
+      application/board_service.py
+      domain/task.py
+  tests/test_architecture.py
+```
+
+An import such as `from taskboard.domain.task import Task` names
+`taskboard/domain/task.py` underneath `src/`. It does not include `src` in the
+import name. Run your tests from `my_repo/` and use:
+
+```python
+from archunitpython import assert_passes, metrics, project_files
+
+def test_no_cycles():
+    rule = project_files("src").should().have_no_cycles()
+    assert_passes(rule)
+
+def test_no_large_files():
+    rule = metrics("src").count().lines_of_code().should_be_below(1000)
+    assert_passes(rule)
+```
+
+The directory name itself has no special meaning:
+
+| Package location, relative to your working directory | Import name | Argument |
+| --- | --- | --- |
+| `src/taskboard/` | `taskboard` | `"src"` |
+| `taskboard/` | `taskboard` | `"."` |
+| `backend/taskboard/` | `taskboard` | `"backend"` |
+
+Selectors such as `.in_path("**/domain/**")` and `.in_folder(...)` narrow which
+files a rule checks. They do not change the import root. For example,
+`project_files().in_path("src/**")` can select files under `src/` while still
+resolving absolute imports from the repository root. Set `project_files("src")`
+first, then add selectors if you need to narrow the rule.
+
+With the wrong root, imports between your own modules can be classified as
+external, causing cycle and internal-dependency rules to miss violations and
+dependency-based metrics to report incorrect values. The root also determines
+which files are included in metric measurements. ArchUnitPython does not infer a
+`src/` import root from `pyproject.toml` or your Python environment; pass it
+explicitly for this layout.
+
+## 🎬 Demo
+
+https://github.com/user-attachments/assets/56f2ad65-a2e1-4965-b84d-445cf7bf4cd2
+
+## Testing Framework
 
 ### pytest (Recommended)
 
@@ -893,6 +964,10 @@ The most important differences:
 
 When tests fail, you get helpful output with file paths and violation details:
 
+Interactive terminals also highlight the failure summary, numbered headings,
+paths, metric values, and rule rationale. Output stays plain when redirected,
+when `CI=true`, or when `NO_COLOR` is set (even to an empty value).
+
 ```
 Found 2 architecture violation(s):
 
@@ -905,24 +980,90 @@ Found 2 architecture violation(s):
 
 ## 📝 Debug Logging & Configuration
 
-We support logging to help you understand what files are being analyzed and troubleshoot test failures. Logging is disabled by default to keep test output clean.
+Logging is disabled by default. Enable it per check to inspect file discovery,
+graph extraction and cache use, selector decisions, edge projections, class
+analysis, metric values, and the resulting violations. File, layer, slice,
+count/LCOM/distance, and custom metric checks use the same logging options.
+
+| Level | What you see |
+| --- | --- |
+| `error` | Analysis exceptions (the original exception is still raised). |
+| `warn` | Failed check summaries and every violation, plus errors. |
+| `info` | Check start, completion, duration, and violations, plus errors. |
+| `debug` | All of the above, plus rule configuration, discovered files, dependencies, cache decisions, selector matches, projected/omitted edges, classes, and measured values. |
 
 ### Enabling Debug Logging
 
 ```python
-from archunitpython import CheckOptions
-from archunitpython.common.logging.types import LoggingOptions
+from archunitpython import CheckOptions, LoggingOptions, project_files
+
+rule = project_files("src/").should().have_no_cycles()
 
 options = CheckOptions(
     logging=LoggingOptions(
         enabled=True,
         level="debug",       # "error" | "warn" | "info" | "debug"
-        log_file=True,       # Creates logs/archunit-YYYY-MM-DD_HH-MM-SS.log
+        log_file=True,       # Creates a unique timestamped file in logs/
     ),
 )
 
 violations = rule.check(options)
 ```
+
+For example, a debug trace includes entries like these (paths and timings depend
+on your project):
+
+```text
+[INFO] Starting check: CycleFreeFileCondition
+[DEBUG] Graph cache miss
+[DEBUG] Discovered file: /project/src/api.py
+[DEBUG] Processing file: /project/src/api.py
+[DEBUG] Dependency: /project/src/api.py -> /project/src/storage.py; external=False; kinds=[]
+[DEBUG] Projection: /project/src/api.py -> /project/src/storage.py becomes /project/src/api.py -> /project/src/storage.py
+[INFO] Finished check: CycleFreeFileCondition - 0 violation(s) (0.002s)
+```
+
+Console diagnostics use the standard `archunitpython` logger when handlers are
+configured, respecting their levels and formatting; otherwise they go to stderr.
+For pytest live logs, use `pytest --log-cli-level=DEBUG`. You can also configure
+Python's standard `logging` module in your application.
+
+### Save detailed inspection without console noise
+
+```python
+options = CheckOptions(logging=LoggingOptions(
+    enabled=True,
+    level="debug",
+    console=False,
+    log_file=True,
+    log_path="logs/architecture.log",
+    append_to_log_file=True,
+))
+violations = rule.check(options)
+```
+
+File logs are UTF-8, timestamped, and contain no added ANSI colors. Automatic
+paths are unique per check; an explicit `log_path` replaces that path.
+`append_to_log_file=False` overwrites an explicit file at the start of each check.
+Each check closes its own output file and isolates its diagnostics from nested
+and concurrent checks. Use separate paths when concurrent checks write to files.
+Diagnostic output is best effort: an unavailable file or failing logging handler
+does not change rule results or hide analysis exceptions. Debug inspection does
+not re-run custom predicates or metric calculations.
+
+### Format results independently of logging
+
+```python
+from archunitpython import assert_passes, format_violations
+
+print(format_violations(violations))               # Detect terminal colors
+text = format_violations(violations, color=False)  # Stable plain text for artifacts
+assert_passes(rule, options, color=False)         # Plain assertion failure
+```
+
+Pass `color=True` to explicitly request ANSI styling; `NO_COLOR` always wins.
+The numbered report, rationale, and details remain available at every log level,
+including when logging is disabled. Existing plain-text report wording is retained.
 
 ### CI Pipeline Integration
 
