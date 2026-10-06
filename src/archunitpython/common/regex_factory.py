@@ -29,6 +29,16 @@ def _pattern_to_regex(pattern: Pattern) -> re.Pattern[str]:
     return _glob_to_regex(pattern)
 
 
+def _optimized_search_regex(pattern: Pattern) -> re.Pattern[str] | None:
+    """Avoid redundant leading glob stars only for the search path.
+
+    Keep Filter.regexp unchanged for callers that use match/fullmatch directly.
+    """
+    if isinstance(pattern, str) and pattern.startswith("*"):
+        return _glob_to_regex(pattern.lstrip("*"))
+    return None
+
+
 class RegexFactory:
     """Factory for creating Filter objects from patterns."""
 
@@ -38,6 +48,7 @@ class RegexFactory:
         return Filter(
             regexp=_pattern_to_regex(name),
             options=PatternMatchingOptions(target="filename"),
+            search_regexp=_optimized_search_regex(name),
         )
 
     @staticmethod
@@ -46,6 +57,7 @@ class RegexFactory:
         return Filter(
             regexp=_pattern_to_regex(name),
             options=PatternMatchingOptions(target="classname"),
+            search_regexp=_optimized_search_regex(name),
         )
 
     @staticmethod
@@ -54,6 +66,7 @@ class RegexFactory:
         return Filter(
             regexp=_pattern_to_regex(folder),
             options=PatternMatchingOptions(target="path-no-filename"),
+            search_regexp=_optimized_search_regex(folder),
         )
 
     @staticmethod
@@ -62,6 +75,7 @@ class RegexFactory:
         return Filter(
             regexp=_pattern_to_regex(path),
             options=PatternMatchingOptions(target="path"),
+            search_regexp=_optimized_search_regex(path),
         )
 
     @staticmethod

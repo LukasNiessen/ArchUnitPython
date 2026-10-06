@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from archunitpython.common.assertion.violation import EmptyTestViolation, Violation
-from archunitpython.common.extraction.extract_graph import extract_graph
+from archunitpython.common.extraction.extract_graph import extract_graph, extract_graph_for_sources
 from archunitpython.common.fluentapi.checkable import CheckOptions, RuleRationaleMixin
 from archunitpython.common.fluentapi.inspection import inspect_check
 from archunitpython.common.pattern_matching import matches_all_patterns
@@ -369,7 +369,9 @@ class DependOnFileCondition(RuleRationaleMixin):
 
     @inspect_check
     def check(self, options: CheckOptions | None = None) -> list[Violation]:
-        graph = extract_graph(self._project_path, options=options)
+        graph = extract_graph_for_sources(
+            self._project_path, self._subject_filters, options=options
+        )
         edges = project_edges(graph, per_internal_edge())
 
         return gather_depend_on_file_violations(

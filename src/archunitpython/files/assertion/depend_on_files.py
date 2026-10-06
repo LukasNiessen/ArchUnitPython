@@ -39,13 +39,24 @@ def gather_depend_on_file_violations(
         List of violations.
     """
     violations: list[Violation] = []
+    subject_matches_by_label: dict[str, bool] = {}
+    target_matches_by_label: dict[str, bool] = {}
 
     for edge in edges:
-        source_matches = all(matches_pattern(edge.source_label, f) for f in subject_filters)
-        if not source_matches:
+        source_label = edge.source_label
+        if source_label not in subject_matches_by_label:
+            subject_matches_by_label[source_label] = all(
+                matches_pattern(source_label, filter_) for filter_ in subject_filters
+            )
+        if not subject_matches_by_label[source_label]:
             continue
 
-        target_matches = all(matches_pattern(edge.target_label, f) for f in object_filters)
+        target_label = edge.target_label
+        if target_label not in target_matches_by_label:
+            target_matches_by_label[target_label] = all(
+                matches_pattern(target_label, filter_) for filter_ in object_filters
+            )
+        target_matches = target_matches_by_label[target_label]
 
         if is_negated:
             # should_not(): violation if dependency EXISTS

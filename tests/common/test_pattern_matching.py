@@ -1,5 +1,6 @@
 """Tests for pattern matching and regex factory."""
 
+import fnmatch
 import re
 
 from archunitpython.common.pattern_matching import (
@@ -57,6 +58,36 @@ class TestPathWithoutFilename:
 
 
 class TestRegexFactory:
+    def test_leading_star_globs_keep_fnmatch_search_semantics(self):
+        patterns = ("*", "**", "**/api*", "***.py", "*?foo", "**/a*b", "*/x?")
+        paths = (
+            "",
+            "api",
+            "api/file.py",
+            "/api/file.py",
+            "src/api/file.py",
+            "src/application/file.py",
+            "src/a/x/b",
+            "src/a\nx/b",
+            "foo",
+            "xfoo",
+            "a/b",
+        )
+        for pattern in patterns:
+            original = re.compile(fnmatch.translate(pattern))
+            filter_ = RegexFactory.path_matcher(pattern)
+            optimized = filter_.search_regexp
+            assert optimized is not None
+            for path in paths:
+                assert bool(filter_.regexp.match(path)) == bool(original.match(path)), (
+                    pattern,
+                    path,
+                )
+                assert bool(optimized.search(path)) == bool(original.search(path)), (
+                    pattern,
+                    path,
+                )
+
     def test_filename_matcher_glob(self):
         f = RegexFactory.filename_matcher("*.py")
         assert f.options.target == "filename"

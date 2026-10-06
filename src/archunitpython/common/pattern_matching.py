@@ -48,7 +48,8 @@ def matches_pattern(file_path: str, filter_: Filter) -> bool:
     else:
         target_string = normalize_path(file_path)
 
-    matched = bool(filter_.regexp.search(target_string))
+    regexp = filter_.search_regexp or filter_.regexp
+    matched = bool(regexp.search(target_string))
     debug("Selector %s against %s (%s): %s", filter_.regexp.pattern, target_string, target, matched)
     return matched
 
@@ -68,7 +69,8 @@ def matches_pattern_classname(class_name: str, file_path: str, filter_: Filter) 
     else:
         target_string = normalize_path(file_path)
 
-    matched = bool(filter_.regexp.search(target_string))
+    regexp = filter_.search_regexp or filter_.regexp
+    matched = bool(regexp.search(target_string))
     debug("Selector %s against %s (%s): %s", filter_.regexp.pattern, target_string, target, matched)
     return matched
 

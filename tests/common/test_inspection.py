@@ -1,7 +1,9 @@
 """Diagnostics must describe execution without affecting its results."""
 
+import importlib
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Barrier
 
 import pytest
@@ -61,11 +63,80 @@ def test_levels_and_unchanged_results(project, caplog, level):
             assert detail in text
 
 
-def test_warm_cache_still_describes_graph(project, caplog):
+def test_selected_source_debug_preserves_lazy_parsing_and_warm_cache(project, caplog, monkeypatch):
+    extraction = importlib.import_module("archunitpython.common.extraction.extract_graph")
+    original_extract = extraction._extract_located_imports
+    parsed_files = []
+
+    def record_parse(path):
+        parsed_files.append(Path(path).name)
+        return original_extract(path)
+
+    monkeypatch.setattr(extraction, "_extract_located_imports", record_parse)
     rule = failing_rule(project)
-    rule.check()
+    options = CheckOptions(logging=LoggingOptions(enabled=True, level="debug"))
+    with caplog.at_level(logging.DEBUG, logger="archunitpython"):
+        cold = rule.check(CheckOptions(clear_cache=True, logging=options.logging))
+    assert len(cold) == 1
+    assert parsed_files == ["api.py"]
+    assert "Selected-source edge cache miss: 0/1 files cached" in caplog.text
+    assert "Dependency:" in caplog.text
+
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG, logger="archunitpython"):
+        warm = rule.check(options)
+    assert warm == cold
+    assert parsed_files == ["api.py"]
+    assert "Selected-source edge cache hit: 1/1 files cached" in caplog.text
+    assert "Dependency:" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("source_pattern", "expected_cache_status"),
+    [
+        ("storage.py", "miss: 0/1 files cached"),
+        ("*.py", "partial hit: 1/2 files cached"),
+    ],
+)
+def test_existing_session_reports_uncached_selected_files(
+    project, caplog, monkeypatch, source_pattern, expected_cache_status
+):
+    failing_rule(project).check()
+    extraction = importlib.import_module("archunitpython.common.extraction.extract_graph")
+    original_extract = extraction._extract_located_imports
+    parsed_files = []
+
+    def record_parse(path):
+        parsed_files.append(Path(path).name)
+        return original_extract(path)
+
+    monkeypatch.setattr(extraction, "_extract_located_imports", record_parse)
+    rule = (
+        project_files(project)
+        .with_name(source_pattern)
+        .should_not()
+        .depend_on_files()
+        .with_name("storage.py")
+    )
     with caplog.at_level(logging.DEBUG, logger="archunitpython"):
         rule.check(CheckOptions(logging=LoggingOptions(enabled=True, level="debug")))
+    assert parsed_files == ["storage.py"]
+    assert f"Selected-source edge cache {expected_cache_status}" in caplog.text
+    assert "Selected-source edge cache hit:" not in caplog.text
+
+
+def test_full_graph_warm_cache_still_describes_graph(project, caplog, monkeypatch):
+    rule = project_files(project).should().have_no_cycles()
+    baseline = rule.check()
+    extraction = importlib.import_module("archunitpython.common.extraction.extract_graph")
+
+    def unexpected_parse(path):
+        raise AssertionError(f"Cached graph must not reparse {path}")
+
+    monkeypatch.setattr(extraction, "_extract_located_imports", unexpected_parse)
+    with caplog.at_level(logging.DEBUG, logger="archunitpython"):
+        result = rule.check(CheckOptions(logging=LoggingOptions(enabled=True, level="debug")))
+    assert result == baseline == []
     assert "Graph cache hit" in caplog.text
     assert "Dependency:" in caplog.text
 
