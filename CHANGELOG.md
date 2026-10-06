@@ -1,3 +1,19 @@
+## [1.8.1](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.8.0...v1.8.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* preserve diagnostics in selective extraction when merging main ([72fb440](https://github.com/LukasNiessen/ArchUnitPython/commit/72fb440cd5038ec091e5846d1042fae46b6a809b))
+
+
+### Performance Improvements
+
+* cache dependency filter matches per check ([a0800fa](https://github.com/LukasNiessen/ArchUnitPython/commit/a0800fa40a00630f0eff7b525cd5d6d07eec185e))
+* parse only selected sources for file dependency rules ([0e3f261](https://github.com/LukasNiessen/ArchUnitPython/commit/0e3f261f4dfdb2ef1655412cc79fe3e157e2d9b1))
+* skip directory-only excludes for Python files ([1a6d5ed](https://github.com/LukasNiessen/ArchUnitPython/commit/1a6d5ed14f01a0ca2b4bb81e9055dce46e36dd21))
+* skip redundant leading glob stars during search ([27f14e8](https://github.com/LukasNiessen/ArchUnitPython/commit/27f14e8215217f0091c5239f29cde13e07b8470e))
+* walk parsed syntax trees once per file ([2f7efbf](https://github.com/LukasNiessen/ArchUnitPython/commit/2f7efbfbbdbdb115639bad58d1581e5e55961ba1))
+
 # [1.8.0](https://github.com/LukasNiessen/ArchUnitPython/compare/v1.7.0...v1.8.0) (2026-09-30)
 
 
