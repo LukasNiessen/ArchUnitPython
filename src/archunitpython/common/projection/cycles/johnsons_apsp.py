@@ -59,11 +59,11 @@ class JohnsonsAPSP:
 
     def _unblock(self, node: NumberNode) -> None:
         self._blocked = [n for n in self._blocked if n is not node]
-        to_remove: list[_BlockedBy] = []
+        to_remove: set[_BlockedBy] = set()
         for blocker in self._blocked_map:
             if blocker.by is node:
                 self._unblock(blocker.blocked)
-                to_remove.append(blocker)
+                to_remove.add(blocker)
         self._blocked_map = [b for b in self._blocked_map if b not in to_remove]
 
     def _is_part_of_current_start_cycle(self, current_node: NumberNode) -> bool:
